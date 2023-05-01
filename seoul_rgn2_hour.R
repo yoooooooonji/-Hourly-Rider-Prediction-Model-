@@ -1,4 +1,5 @@
 # 0. install packages 
+options(scipen=999)
 
 ipak <-function(pkg){
   new.pkg<-pkg[!(pkg %in% installed.packages()[,"Package"])]
@@ -24,7 +25,6 @@ data <- data %>%
   filter(pick_rgn1_nm == '서울특별시')
 
 dim(data) # 197804
-table(data$pick_rgn2_nm)
 
 # weather
 weather1 <- read.csv("/Users/yj.noh/Desktop/weather_2022.csv", fileEncoding = "cp949") 
@@ -76,37 +76,76 @@ data <- data %>%
 
 table(data$is_rain)  # 0 : 175784 , 1: 18852         
 
-var <-  c('month','week','hour_reg2', 'is_rain')
-data[,var]<- lapply(data[,var], factor)
-
 # 전일 동시간대 주문수
-str(data)
-
-data <- data %>% 
-  group_by(pick_rgn2_nm, hour_reg) %>% 
-  arrange(reg_date) %>% 
-  mutate(order_cnt_lag = lag(order_cnt))
+# str(data)
+# 
+# data <- data %>% 
+#   group_by(pick_rgn2_nm, hour_reg) %>% 
+#   arrange(reg_date) %>% 
+#   mutate(order_cnt_lag = lag(order_cnt))
 
 # 전시간 주문수 
-data <- data %>% 
-  group_by(pick_rgn2_nm) %>% 
-  arrange(reg_date, hour_reg2) %>% 
-  mutate(order_cnt_last = lag(order_cnt))
+# data <- data %>% 
+#   group_by(pick_rgn2_nm) %>% 
+#   arrange(reg_date, hour_reg2) %>% 
+#   mutate(order_cnt_last = lag(order_cnt))
 
-# 전주 동일 요일 동시간대 주문수
-data <- data %>% 
-  group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
-  arrange(reg_date) %>% 
-  mutate(order_cnt_last_week = lag(order_cnt))
-
-# 전주 동일 요일 동시간대 라이더수 
+# w-1 동일 요일 동시간대 주문수
 data <- data %>% 
   group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
   arrange(reg_date) %>% 
-  mutate(rider_cnt_last_week = lag(rider_cnt))
+  mutate(order_cnt_w_1= lag(order_cnt, n=1))
 
-# holiday
-# 공휴일 여부 판단 함수 정의
+# w-2 동일 요일 동시간대 주문수
+data <- data %>% 
+  group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
+  arrange(reg_date) %>% 
+  mutate(order_cnt_w_2 = lag(order_cnt, n=2))
+
+# w-3 동일 요일 동시간대 주문수
+data <- data %>% 
+  group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
+  arrange(reg_date) %>% 
+  mutate(order_cnt_w_3 = lag(order_cnt, n=3))
+
+# w-4 동일 요일 동시간대 주문수
+data <- data %>% 
+  group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
+  arrange(reg_date) %>% 
+  mutate(order_cnt_w_4 = lag(order_cnt, n=4))
+
+# w-1 동일 요일 동시간대 라이더수 
+data <- data %>% 
+  group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
+  arrange(reg_date) %>% 
+  mutate(rider_cnt_w_1 = lag(rider_cnt, n=1))
+
+# w-2 동일 요일 동시간대 라이더수 
+data <- data %>% 
+  group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
+  arrange(reg_date) %>% 
+  mutate(rider_cnt_w_2 = lag(rider_cnt, n=2))
+
+# w-3 동일 요일 동시간대 라이더수 
+data <- data %>% 
+  group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
+  arrange(reg_date) %>% 
+  mutate(rider_cnt_w_3 = lag(rider_cnt, n=3))
+
+# w-4 동일 요일 동시간대 라이더수 
+data <- data %>% 
+  group_by(day_of_reg, hour_reg, pick_rgn2_nm) %>% 
+  arrange(reg_date) %>% 
+  mutate(rider_cnt_w_4 = lag(rider_cnt, n=4))
+
+# 주문수/라이더수 
+data <- data %>% 
+  mutate(infra_w_1 = order_cnt_w_1/rider_cnt_w_1,
+         infra_w_2 = order_cnt_w_2/rider_cnt_w_2,
+         infra_w_3 = order_cnt_w_3/rider_cnt_w_3,
+         infra_w_4 = order_cnt_w_4/rider_cnt_w_4)
+  
+# is_holiday
 holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09", 
                      "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15",
                      "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", "2022-10-03", 
@@ -119,104 +158,169 @@ data$reg_date <- as.Date(data$reg_date)
 data <- data %>% 
   mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("FRI", "SAT", "SUN")),1,0))
 
+# is_peak
+data <- data %>% 
+  mutate(is_peak1 = ifelse(hour_reg2 %in% c(11,12,13),1,0),
+         is_peak2 = ifelse(hour_reg2 %in% c(17,18,19,20),1,0))
+
 # check NA
 colSums(is.na(data)) 
 
 data <- data %>% 
-  filter(!is.na(order_cnt_lag)&!is.na(order_cnt_last_week) & !is.na(rider_cnt_last_week) & !is.na(order_cnt_last)) 
+  filter(!is.na(order_cnt_w_1)&!is.na(order_cnt_w_2) & !is.na(order_cnt_w_3) & !is.na(order_cnt_w_4)) 
 
-dim(data) # 194,636
+dim(data) # 185,188
 
-data[c("rider_cnt", "order_cnt", "pick_rgn2_nm")] %>% tbl_summary( by = "pick_rgn2_nm")
+# data[c("rider_cnt", "order_cnt", "pick_rgn2_nm")] %>% tbl_summary( by = "pick_rgn2_nm") %>% add_p()
+# data[c("rider_cnt","order_cnt","pick_rgn2_nm", "is_rain")] %>% tbl_summary(by="is_rain")  %>% add_p()
+# data[c("rider_cnt","order_cnt","pick_rgn2_nm", "is_peak1")] %>% tbl_summary(by="is_peak1")  %>% add_p()
+# data[c("rider_cnt","order_cnt","pick_rgn2_nm", "is_peak2")] %>% tbl_summary(by="is_peak2") %>% add_p()
 
 #write.csv(data, "rider_hour_rgn2_seoul_data.csv", row.names = FALSE, fileEncoding = "cp949")
 #####################################################################################################
 #modeling
 str(data)
 
-var <-  c('day_of_reg', 'pick_rgn1_nm', 'pick_rgn2_nm','is_holiday')
+var <-  c('hour_reg', 'day_of_reg', 'pick_rgn1_nm','hour_reg2', 'month', 'week', 'is_rain',
+          'is_holiday','is_peak1' ,'is_peak2')
 data[,var]<- lapply(data[,var], factor)
 
 # train_test 
-train <- data[c("reg_date","hour_reg2", "day_of_reg","pick_rgn2_nm", "rider_cnt",  "temp_c",
-                "rain_c", "snow_c", "wind","humidity", "month", "week", "order_cnt_lag", "order_cnt_last_week", 
-                "rider_cnt_last_week", "is_holiday", "is_rain", "order_cnt_last")] %>% 
+train <- data %>% 
   filter(reg_date <= '2022-12-31')
 
-dim(train) # 155,530
+dim(train) # 146085
 
-test <- data[c("reg_date","hour_reg2", "day_of_reg","pick_rgn2_nm", "rider_cnt",  "temp_c",
-               "rain_c", "snow_c", "wind","humidity", "month", "week", "order_cnt_lag", "order_cnt_last_week", 
-               "rider_cnt_last_week", "is_holiday", "is_rain", "order_cnt_last")] %>% 
+test <- data %>% 
   filter(reg_date >= '2023-01-01')
 
-dim(test) # 39,106
+dim(test) # 39,103
 
-train <- subset(train, select = -reg_date)
-test <- subset(test, select = -reg_date)
+train_set <- subset(train, select = -c(reg_date, hour_reg, pick_rgn1_nm, order_cnt, wind, humidity))
+test_set <- subset(test, select = -c(reg_date, hour_reg, pick_rgn1_nm, order_cnt, wind, humidity))
+
+str(train_set)
+
+# numeric variable mix-max scale
+
+# x 변수의 최소값과 최대값 저장
+# train_min <- min(train$rider_cnt)
+# train_max <- max(train$rider_cnt)
+# 
+# test_min <- min(test$rider_cnt)
+# test_max <- max(test$rider_cnt)
+# 
+# normalize <- function(x, na.rm = TRUE) {
+#   return((x- min(x)) /(max(x)-min(x)))
+# }
+# 
+# train_set[c('rider_cnt','temp_c', 'rain_c','order_cnt_w_1',
+#             'order_cnt_w_2','order_cnt_w_3','order_cnt_w_4','rider_cnt_w_1',
+#             'rider_cnt_w_2','rider_cnt_w_3','rider_cnt_w_4')] = normalize(train_set[c('rider_cnt','temp_c', 'rain_c','order_cnt_w_1',
+#                                                                                   'order_cnt_w_2','order_cnt_w_3','order_cnt_w_4','rider_cnt_w_1', 
+#                                                                                   'rider_cnt_w_2','rider_cnt_w_3','rider_cnt_w_4')])
+# 
+# test_set[c('rider_cnt','temp_c', 'rain_c','order_cnt_w_1',
+#             'order_cnt_w_2','order_cnt_w_3','order_cnt_w_4','rider_cnt_w_1',
+#             'rider_cnt_w_2','rider_cnt_w_3','rider_cnt_w_4')] = normalize(test_set[c('rider_cnt','temp_c', 'rain_c','order_cnt_w_1',
+#                                                                                       'order_cnt_w_2','order_cnt_w_3','order_cnt_w_4','rider_cnt_w_1', 
+#                                                                                       'rider_cnt_w_2','rider_cnt_w_3','rider_cnt_w_4')])
+# 
+
+summary(train_set)
 
 # correlation
-cor(data$rider_cnt, data$order_cnt_lag) # 0.92
-cor(data$rider_cnt, data$order_cnt_last_week) # 0.95
-cor(data$rider_cnt, data$rain_c) # -0.004
-cor(data$rider_cnt, data$temp_c) # 0.065
-cor(data$rider_cnt, data$snow_c) # -0.033 
-cor(data$rider_cnt, data$humidity) # -0.14
-cor(data$rider_cnt, data$wind) # 0.12
-cor(data$rider_cnt, data$rider_cnt_last_week) # 0.97
-cor(data$rider_cnt, data$order_cnt_last) # 0.84
-cor(data$rider_cnt, data$order_cnt) # 0.97
+cor(data$rider_cnt, data$order_cnt_w_1) # 0.95
+cor(data$rider_cnt, data$order_cnt_w_2) # 0.95
+cor(data$rider_cnt, data$order_cnt_w_3) # 0.94
+cor(data$rider_cnt, data$order_cnt_w_4) # 0.94
+
+cor(data$rider_cnt, data$rider_cnt_w_1) #0.97
+cor(data$rider_cnt, data$rider_cnt_w_2) #0.97
+cor(data$rider_cnt, data$rider_cnt_w_3) # 0.96
+cor(data$rider_cnt, data$rider_cnt_w_4) #0.96
+
+cor(data$rider_cnt, data$rain_c) # -0.005
+cor(data$rider_cnt, data$temp_c) # 0.064
+cor(data$rider_cnt, data$snow_c) # -0.0331
+
 
 library(forecast)
 
 # all
-model <- lm(rider_cnt ~., data = train)
-summary(model) # 0.967
-accuracy(model)
+model <- lm(rider_cnt ~., data = train_set)
+summary(model) # 0.968
+accuracy(model) #mae 0.004
 
-# order_cnt_lag, order_cnt_last_week
-model1 <- lm(rider_cnt ~ order_cnt_lag + order_cnt_last_week, data =train)
-summary(model1) # 0.9177
-accuracy(model1)
+# order_cnt_w_1
+model1 <- lm(rider_cnt ~ order_cnt_w_1, data =train_set)
+summary(model1) # 0.9102
+accuracy(model1) #mae 0.008
 
-# order_cnt_lag
-model2 <- lm(rider_cnt ~ order_cnt_lag, data =train)
-summary(model2) # 0.8596
-accuracy(model2)
+# order_cnt_w_2
+model2 <- lm(rider_cnt ~ order_cnt_w_2, data =train_set)
+summary(model2) # 0.905
+accuracy(model2) #mae 0.008
 
-# order_cnt_last_week
-model3 <- lm(rider_cnt ~ order_cnt_last_week, data = train)
-summary(model3) # 0.9106 
-accuracy(model3)
+# order_cnt_w_3
+model3 <- lm(rider_cnt ~ order_cnt_w_3, data =train_set)
+summary(model3) # 0.9006
+accuracy(model3) #mae 0.008
 
-# rider_cnt_last_week
-model4 <- lm(rider_cnt ~ rider_cnt_last_week, data = train)
-summary(model4) # 0.9497
-accuracy(model4)
+# order_cnt_w_4
+model4 <- lm(rider_cnt ~ order_cnt_w_4, data =train_set)
+summary(model4) # 0.8993
+accuracy(model4) #mae 0.008
 
-# rider_cnt_last_week, order_cnt_last_week
-model5 <- lm(rider_cnt ~ rider_cnt_last_week + order_cnt_last_week, data = train)
-summary(model5) # 0.9498
-accuracy(model5)
+# rider_cnt_w_1
+model5 <- lm(rider_cnt ~ rider_cnt_w_1, data = train_set)
+summary(model5) # 0.9496
+accuracy(model5) #0.005
 
-# p-value < 0.05
-model6 <- lm(formula = rider_cnt ~ hour_reg2 + day_of_reg + pick_rgn2_nm + 
-               rain_c + snow_c + wind + humidity + month + week + order_cnt_lag + 
-               order_cnt_last_week + rider_cnt_last_week + is_holiday + 
-               is_rain + order_cnt_last, data = train)
+# rider_cnt_w_2
+model6 <- lm(rider_cnt ~ rider_cnt_w_2, data = train_set)
+summary(model6) # 0.945
+accuracy(model6) #0.005
 
-summary(model6) # 0.967
-accuracy(model6)
+# rider_cnt_w_3
+model7 <- lm(rider_cnt ~ rider_cnt_w_3, data = train_set)
+summary(model7) # 0.9404
+accuracy(model7) #0.005
+
+# rider_cnt_w_4
+model8 <- lm(rider_cnt ~ rider_cnt_w_4, data = train_set)
+summary(model8) # 0.9389
+accuracy(model8) #0.005
 
 # stepAIC
-#stepAIC(model, direction = "both")
-model7 <- lm(formula = rider_cnt ~ hour_reg2 + day_of_reg + pick_rgn2_nm + 
-               rain_c + snow_c + wind + humidity + month + week + order_cnt_lag + 
-               order_cnt_last_week + rider_cnt_last_week + is_holiday + 
-               is_rain + order_cnt_last, data = train)
+stepAIC(model, direction = "both")
+model_AIC <- lm(formula = rider_cnt ~ day_of_reg + pick_rgn2_nm + rain_c + 
+                  snow_c + hour_reg2 + month + week + is_rain + order_cnt_w_1 + 
+                  order_cnt_w_2 + order_cnt_w_4 + rider_cnt_w_1 + rider_cnt_w_2 + 
+                  rider_cnt_w_3 + rider_cnt_w_4 + infra_w_1 + infra_w_3 + infra_w_4 + 
+                  is_holiday, data = train_set)
 
-summary(model7) # 0.967
-accuracy(model7)
+summary(model_AIC) #0.9687
+accuracy(model_AIC) 
+  
+
+# p-value < 0.05 
+model_fin <- lm (rider_cnt ~ day_of_reg + pick_rgn2_nm + rain_c + 
+                   snow_c + hour_reg2 + month + week + is_rain + order_cnt_w_1+ 
+                   order_cnt_w_2 + order_cnt_w_4 + rider_cnt_w_1 + rider_cnt_w_2 + 
+                   rider_cnt_w_3 + rider_cnt_w_4 + infra_w_1 + infra_w_3 + infra_w_4 + 
+                   is_holiday, data = train_set)
+
+summary(model_fin) # 0.9687
+accuracy(model_fin) # 0.004
+
+#다중공선성
+library(car)
+
+vif(model) 
+vif(model_AIC)
+
+  
 
 # plot 
 plot(test$rider_cnt)
@@ -230,91 +334,73 @@ lines(model6$fitted.values, col = "orange")
 
 
 # test set 
+install.packages("Metrics")
+library(Metrics)
+
 # accuracy 
+
+# # 예측값을 normalize() 함수에서 사용한 최소값과 최대값으로 되돌리기
+y_pred <- predict(model_AIC, newdata = test_set) # 모델의 예측값
+#y_pred_rescaled <- y_pred * (test_max - test_min) + test_min
+
+
+r_square = function(y_actual,y_predict){
+  cor(y_actual,y_predict)^2
+}
+
 rmse <- function(actual, predicted) {
   sqrt(mean((actual - predicted) ^ 2))
 }
 
 actual <- test$rider_cnt
-p1 <- predict(model, newdata = test)
-p2 <- predict(model1, newdata = test)
-p3 <- predict(model2, newdata = test)
-p4 <- predict(model3, newdata = test)
-p5 <- predict(model4, newdata = test)
-p6 <- predict(model5, newdata = test)
-p7 <- predict(model7, newdata = test)
 
+rmse <- rmse(actual, y_pred)
+r_square <- r_square(actual, y_pred)
+mae <- mae(actual, y_pred)
+error = y_pred - actual
 
-rmse1 <- rmse(actual, p1)
-rmse2 <- rmse(actual, p2)
-rmse3 <- rmse(actual, p3)
-rmse4 <- rmse(actual, p4)
-rmse5 <- rmse(actual, p5)
-rmse6 <- rmse(actual, p6)
-rmse7 <- rmse(actual, p7)
+rmse # 32
+r_square # 0.95
+mae # 22.96
 
-rmse1 
-rmse2 
-rmse3 
-rmse4 
-rmse5 
-rmse6 
-rmse7 
-
-#mae
-mae1 <- mean(abs(actual-p1))
-mae2 <- mean(abs(actual-p2))
-mae3 <- mean(abs(actual-p3))
-mae4 <- mean(abs(actual-p4))
-mae5 <- mean(abs(actual-p5))
-mae6 <- mean(abs(actual-p6))
-mae7 <- mean(abs(actual-p7))
-
-mae1 #29.68
-mae2 # 38.69
-mae3 # 30.26
-mae4 # 19.31
-mae5 # 19.33
-mae6 # 19.02
-mae7 # 19.02
-
-error = p7 - actual
-result <- data.frame(p7, actual,test$hour_reg2,test$day_of_reg, test$pick_rgn2_nm, test$month, test$rain_c, test$is_holiday, test$is_rain, error)
+result <- data.frame(y_pred, actual,test$reg_date, test$hour_reg2,test$day_of_reg, test$pick_rgn2_nm, test$month, test$rain_c, test$is_holiday, test$is_rain, error)
 summary(result$error)
 
+#############################################################################################################################################
+# 지역별 시간대별, 기상 유무 mae 
+result <- aggregate(abs(y_pred - actual), 
+                    by = list(test_set$hour_reg2), 
+                    FUN = mean)
+result
 
-good <- result %>% 
-  filter(error >= -20 & error <= 20) #26110
+result2 <-aggregate(abs(y_pred - actual), 
+                    by = list(test_set$pick_rgn2_nm), 
+                    FUN = mean) 
+result2
 
-bad <- result %>% 
-  filter(error <=-100 | error >= 100) # 440
+result3 <- aggregate(abs(y_pred - actual), 
+                     by = list(test_set$is_rain), 
+                     FUN = mean)
+result3
 
-table(good$test.pick_rgn2_nm)
-table(bad$test.pick_rgn2_nm)
-
-#12556
-medium <- result %>% 
-  filter(-100 < error & error < -20 | 20 < error & error < 100)
-
-dim(test) # 39106 
-summary(bad) #피크시간, 일요일, 강남구 
-summary(good) #야간시간, 중구,종로구,성동구,중랑구,도봉구,용산구 / 
-summary(medium) #피크시간, 강남구,금토일
-
+result4 <- aggregate(abs(y_pred - actual), 
+                     by = list(test_set$hour_reg2, test_set$pick_rgn2_nm), 
+                     FUN = mean)
+result4
+#############################################################################################################################################
+# 잔차 
 # 잔차 등분산성
 par(mfrow = c(2,2))
-plot(model7)
+plot(model_AIC)
 
 #잔차 독립성
 library(car)
-hap_1_res <- residuals(model7)
+hap_1_res <- residuals(model_AIC)
 durbinWatsonTest(hap_1_res) #1.06
 
 #잔차 정규성
 shapiro.test(hap_1_res)
 
-#다중공선성
-vif(model7) #last_week 2개
 
 
 
