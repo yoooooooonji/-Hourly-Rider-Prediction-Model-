@@ -128,6 +128,8 @@ model_AIC <- lm(formula = rider_cnt_2 ~ hour_reg + day_of_reg + temp_c + month +
 summary(model_AIC) 
 accuracy(model_AIC)  
 
+model_not_rain_gn <- model_AIC
+
 
 # p-value < 0.05 
 summary(model)

@@ -125,7 +125,8 @@ model_AIC <- lm(formula = rider_cnt_2 ~ pick_rgn2_nm + hour_reg + day_of_reg +
                   rider_cnt_w_4 + is_holiday, data = train_set)
 summary(model_AIC) 
 accuracy(model_AIC)  
-  
+
+model_not_rain <- model_AIC
 
 # p-value < 0.05 
 summary(model)

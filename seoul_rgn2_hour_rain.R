@@ -13,14 +13,14 @@ pkg<-c("readr","dplyr","tidytext","tidyverse","lubridate","reshape2","psych","gt
 ipak(pkg)
 
 #####################################################################################################
-# 강남구 제외 seoul 평시 
+# 서울 전체 기상 
 getwd()
 data <- read.csv("rider_hour_rgn2_seoul_filled_data.csv", fileEncoding = "cp949")
 
 data <- data %>% 
-  filter(pick_rgn2_nm != "강남구" & is_rain == 1)
+  filter(is_rain == 1)
 
-dim(data) # 16,137
+dim(data) # 16,810
 
 #modeling
 var <-  c('pick_rgn2_nm', 'hour_reg','day_of_reg','is_rain','month','week','is_holiday')
@@ -34,12 +34,12 @@ cor(data[c("rider_cnt_2", "order_cnt_w_1", "order_cnt_w_2","order_cnt_w_3","orde
 train <- data %>% 
   filter(reg_date <= '2022-12-31')
 
-dim(train) # 14,536
+dim(train) # 15,142
 
 test <- data %>% 
   filter(reg_date >= '2023-01-01')
 
-dim(test) # 1601
+dim(test) # 1,668
 
 train_set <- subset(train, select = -c(datetime, reg_date, order_cnt, rider_cnt, order_cnt_2, is_rain))
 test_set <- subset(test, select = -c(datetime, reg_date,  order_cnt, rider_cnt, order_cnt_2, is_rain))
@@ -120,19 +120,21 @@ accuracy(model6)
 # stepAIC
 stepAIC(model, direction = "both")
 model_AIC <- lm(formula = rider_cnt_2 ~ pick_rgn2_nm + hour_reg + day_of_reg + 
-                  temp_c + rain_c + snow_c + month + week + order_cnt_w_1 + 
-                  order_cnt_w_3 + order_cnt_w_4 + rider_cnt_w_1 + rider_cnt_w_2 + 
-                  rider_cnt_w_3 + rider_cnt_w_4 + is_holiday, data = train_set)
+                  temp_c + rain_c + snow_c + month + week + order_cnt_w_4 + 
+                  rider_cnt_w_1 + rider_cnt_w_2 + rider_cnt_w_3 + rider_cnt_w_4 + 
+                  is_holiday, data = train_set)
+
 
 summary(model_AIC) 
 accuracy(model_AIC)  
-  
+
+
+model_rain <- model_AIC
 
 # p-value < 0.05 
 summary(model)
-model_fin <- lm(rider_cnt_2 ~ pick_rgn2_nm + hour_reg + day_of_reg + temp_c + rain_c + snow_c + month + week + 
-                  order_cnt_w_3 + rider_cnt_w_1 + rider_cnt_w_2 + 
-                  rider_cnt_w_3 + rider_cnt_w_4 + is_holiday, data = train_set) 
+model_fin <- lm(rider_cnt_2 ~ pick_rgn2_nm + hour_reg + day_of_reg +rain_c + snow_c + month + week + 
+                  rider_cnt_w_1 + rider_cnt_w_2 + rider_cnt_w_3 + rider_cnt_w_4 + is_holiday, data = train_set) 
 summary(model_fin) 
 accuracy(model_fin) 
 
