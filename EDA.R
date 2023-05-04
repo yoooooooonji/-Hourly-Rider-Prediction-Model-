@@ -20,7 +20,7 @@ data <- read.csv("combined_data.csv", fileEncoding = "cp949")
 data$reg_date <- as.Date(data$reg_date)
 data$datetime <- as.POSIXct(data$datetime)
 
-str(data)
+#str(data)
 min(data$reg_date) # 2022-01-01
 max(data$reg_date) # 2023-03-31
 
@@ -30,77 +30,75 @@ table(data$day_of_reg, data$month)
 dim(data) #170,625
 table(data$pick_rgn2_nm) 
 
-# 2. 분포 
-# 강남구 라이더수 분포 - 평시 (이상치 제거 전)
-gangnam_graph <- data %>% 
-filter(pick_rgn2_nm == '강남구' & is_rain == 0) %>% 
-group_by(day_of_reg) %>% 
-ggplot(aes(as.factor(hour_reg),rider_cnt_2)) +
-geom_boxplot() +
-labs(title = '강남구 평시 시간대별 라이더수 분포', x = '시간', y = '라이더수')
 
-gangnam_graph
+# 2. 이상치 여부 파악
 
-# 서초구 라이더수 분포 - 평시 (이상치 제거 전)
-seocho_graph <- data %>% 
-filter(pick_rgn2_nm == '서초구' & is_rain == 0) %>%
-group_by(day_of_reg) %>%
-ggplot(aes(as.factor(hour_reg),rider_cnt_2)) +
-geom_boxplot() +
-labs(title = '서초구 평시 시간대별 라이더수 분포', x = '시간', y = '라이더수')
+# TSL 분해 방법 (절단이 안되었을 경우에 사용 가능)
+# library(tsibble)
+# library(timetk)
 
-seocho_graph
+# grouped_data <- data %>% group_by(pick_rgn2_nm)
+# grouped_data  %>% plot_anomaly_diagnostics(datetime, rider_cnt)
+# anomaly_data <- grouped_data %>%
+# tk_anomaly_diagnostics(datetime, rider_cnt)
+# table(anomaly_data$anomaly) #1016 
+# test <- left_join(grouped_data, anomaly_data, by = c("datetime" = "datetime", 'rider_cnt'= "observed"))
+# test <- test  %>% filter(anomaly == 'Yes')
+# table(test$is_rain) # 0 : 710, 1:225
+# table(test$pick_rgn2_nm.x) # 강남구 205
+# table(test$hour_reg) # 11 : 402, 17 : 182 
 
-# 그래프 저장
-# ggsave("monthly_graph.png", monthly_graph)
-# ggsave("daily_graph.png", daily_graph)
-# ggsave("hourly_graph.png", hourly_graph)
+# IQR Rule-based Anomaly Detection 
+data <- data %>% 
+group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
+mutate(q1 = quantile(rider_cnt, 0.25),
+      q3 = quantile(rider_cnt, 0.75),
+      IQR1.5 = 1.5*(quantile(rider_cnt, 0.75) - quantile(rider_cnt, 0.25)))
 
-# 3. 이상치 여부 파악
-# rgn2, is_rain 그룹별 
-library(tsibble)
-library(timetk)
+summary(data)
 
-grouped_data <- data %>% group_by(pick_rgn2_nm, is_rain)
+data <- data  %>% 
+mutate(outlier = case_when (is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) ~ 1,
+                            TRUE ~ 0))
 
-rain <- data %>% filter(is_rain == 1)
-rain_1 <- rain %>% tk_anomaly_diagnostics(datetime, rider_cnt)
-rain %>% plot_anomaly_diagnostics(datetime, rider_cnt)
-table(rain_1$anomaly) #78 
+table(data$outlier) #7033
 
+# outlier median 값으로 대체 
+data <- data %>% 
+group_by(pick_rgn2_nm, day_of_reg, hour_reg)  %>%
+mutate(rider_cnt_2 = case_when(outlier == 1 ~ median(rider_cnt),
+                              TRUE ~ rider_cnt))
 
-tt <- data  %>% 
-tk_anomaly_diagnostics(datetime, rider_cnt)
-table(tt$anomaly)
-test <- tt  %>% filter(anomaly == 'Yes')
-test <- test %>% mutate(hour = hour(datetime))
-table(test$hour)
+table(data$outlier, data$day_of_reg) #월, 수,일 많음
 
-anomaly_data <- grouped_data %>% 
-tk_anomaly_diagnostics(datetime, rider_cnt)
-table(grouped_data$anomaly)
-
-# 강남구
-test1 <- data %>% filter(pick_rgn2_nm == '강남구' & reg_date >= '2023-03-01')
-
-test1  %>% 
-plot_anomaly_diagnostics(datetime, rider_cnt, .alpha = 0.05, .interactive = FALSE)
-
-test1 <- test1 %>% tk_anomaly_diagnostics(datetime, rider_cnt, .alpha = 0.05)
-table(test1$anomaly)
-
-# 4. 자기상관성 확인
+# 3. 자기상관성 확인
 # ACF : 자기상관 함수
 # PACF : 부분자기상관 함수
 
-library(stats)
+library(timetk)
+acf_result <- data  %>% group_by(pick_rgn2_nm) %>% 
+tk_acf_diagnostics(datetime, rider_cnt_2, .lags=150)
 
-acf(data$rider_cnt_2)
-acf(data$rider_cnt_2, plot = FALSE)
+tb <- acf_result  %>% group_by(lag) %>% summarise(mean = mean(ACF))
 
-colSums(is.na(data))
+# 4. 그래프
+graph1 <- data  %>% 
+ggplot(aes(as.factor(hour_reg),rider_cnt_2)) +
+geom_boxplot() +
+labs(title = '시간대별 라이더수 분포', x = '시간', y = '라이더수')
+graph1
 
-grouped_data <- split(data$rider_cnt_2, data$pick_rgn2_nm)
-groups_acf <- lapply(grouped_data, acf, plot = FALSE)
-groups_acf
+graph2 <- data %>% 
+ggplot(aes(as.factor(month), rider_cnt_2)) +
+geom_boxplot() +
+labs(title = '월별 라이더수 분포', x = '시간', y = '라이더수')
 
+graph2
+
+# 그래프 저장
+# ggsave("강남구 월별 (raw).png", raw1)
+# ggsave("강남구 월별 (cleaned).png", ch1)
+# ggsave("강남구 시간대별 (raw).png", raw2)
+# ggsave("강남구 시간대별 (cleaned).png", ch2)
+
+write.csv(data, "final_data.csv", row.names = FALSE, fileEncoding = "cp949")

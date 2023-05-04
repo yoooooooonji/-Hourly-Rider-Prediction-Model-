@@ -136,7 +136,7 @@ holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "20
 
 combined_data$reg_date <- as.Date(combined_data$reg_date)
 combined_data <- combined_data %>% 
-  mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("FRI", "SAT", "SUN")),1,0))
+  mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("SAT", "SUN")),1,0))
 
 colSums(is.na(combined_data))
 
