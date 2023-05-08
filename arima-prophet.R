@@ -74,3 +74,40 @@ rmse_prophet <- sqrt(mean((actual - prophet_predicted)^2))
 cat("ARIMA - MAE:", mae_arima, " RMSE:", rmse_arima, "\n")
 cat("PROPHET - MAE:", mae_prophet, "RMSE:", rmse_prophet, "\n")
 
+# 1. 패키지 불러오기
+library(forecast)
+library(prophet)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(tidyr)
+
+# 2. 데이터 불러오기 및 전처리
+data <- read_csv("your_data_file.csv") # 데이터 파일 불러오기
+data$datetime <- as.POSIXct(data$datetime, format="%Y-%m-%d %H:%M:%S") # datetime 컬럼을 POSIXct 형식으로 변환
+data <- data %>% arrange(datetime) # datetime을 기준으로 데이터 정렬
+
+# 지역별로 데이터를 분리
+locations <- unique(data$location)
+
+# 각 지역별 모델 및 예측 결과를 저장할 빈 리스트
+arima_results <- list()
+prophet_results <- list()
+
+# 각 지역별로 ARIMA 및 Prophet 모델 훈련 및 예측 수행
+for (location in locations) {
+  data_location <- data %>% filter(location == !!location)
+  
+  # ARIMA 모델
+  ts_data_location <- ts(data_location$visitors, frequency = 24) # 시간대별 방문자 수를 시계열 데이터로 변환 (24시간 단위)
+  arima_model_location <- auto.arima(ts_data_location)
+  arima_forecast_location <- forecast(arima_model_location, h=24*7)
+  arima_results[[as.character(location)]] <- arima_forecast_location$mean
+  
+  # Prophet 모델
+  prophet_data_location <- data_location %>% select(datetime, visitors) %>% rename(ds=datetime, y=visitors)
+  prophet_model_location <- prophet(prophet_data_location)
+  future_location <- make_future_dataframe(prophet_model_location, periods = 24*7, freq = "hour")
+  prophet_forecast_location <- predict(prophet_model_location, future_location)
+  prophet_results[[as.character(location)]] <- tail(prophet_forecast_location$yhat, 24*7)
+}
