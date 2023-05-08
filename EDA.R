@@ -22,12 +22,12 @@ data$datetime <- as.POSIXct(data$datetime)
 
 #str(data)
 min(data$reg_date) # 2022-01-01
-max(data$reg_date) # 2023-03-31
+max(data$reg_date) # 2023-04-30
 
 data$day_of_reg <- factor(data$day_of_reg, levels = c('월요일', '화요일', '수요일', '목요일','금요일', '토요일','일요일'))
 
 table(data$day_of_reg, data$month)
-dim(data) #170,625
+dim(data) #181,875
 table(data$pick_rgn2_nm) 
 
 
@@ -61,7 +61,7 @@ data <- data  %>%
 mutate(outlier = case_when (is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) ~ 1,
                             TRUE ~ 0))
 
-table(data$outlier) #7033
+table(data$outlier) #7247
 
 # outlier median 값으로 대체 
 data <- data %>% 

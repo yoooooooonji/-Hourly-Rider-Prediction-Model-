@@ -26,13 +26,9 @@ data <- data %>%
   filter(pick_rgn1_nm == '서울특별시')
 
 data<- data %>% 
-  filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23) & reg_date <='2023-03-31')
+  filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23) & reg_date <='2023-04-30')
 
-dim(data) # 170,625
-
-data  %>% 
-group_by(pick_rgn2_nm, month(reg_date), day_of_reg) %>% 
-summarise(n = n())
+dim(data) # 181,875
 
 table(data$pick_rgn2_nm)
 table(data$hour_reg)
@@ -54,7 +50,7 @@ all_combinations <- seq(from = min(data$datetime), to = max(data$datetime),  by 
 location_unique <- unique(data$pick_rgn2_nm)
 location_full <- expand.grid(datetime = all_combinations, pick_rgn2_nm = location_unique)
 
-n_distinct(location_full$datetime) #10911
+n_distinct(location_full$datetime) # 11,631
 n_distinct(location_full$pick_rgn2_nm) #25
 
 # 데이터와 조합 합치기
@@ -65,13 +61,13 @@ combined_data <- left_join(location_full, data, by = c("datetime" = "datetime", 
 combined_data <- combined_data %>% 
   mutate(hour_reg2 = hour(datetime))
 
-dim(combined_data) # 272,775
+dim(combined_data) # 290,775
 table(combined_data$hour_reg2)
 
 combined_data <- combined_data %>% 
   filter(hour_reg2 %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 
-dim(combined_data) # 170,625
+dim(combined_data) # 181,875
 table(combined_data$hour_reg2)
 
 colSums(is.na(combined_data)) # 결측치 없음. 
@@ -83,6 +79,7 @@ combined_data <- combined_data %>%
   mutate(day_of_reg2 = substr(weekdays(reg_date_2),1,3))
 
 table(combined_data$day_of_reg2)
+head(combined_data)
 
 combined_data <- subset(combined_data, select = -c(reg_date, hour_reg, day_of_reg, pick_rgn1_nm))      
 str(combined_data)
@@ -113,7 +110,7 @@ combined_data <- combined_data %>%
          "hour_reg" = "hour_reg2",
          "reg_date" = "reg_date_2",
          "day_of_reg" = "day_of_reg2")
-
+head(combined_data)
 
 # NA 
 combined_data$rain_c[is.na(combined_data$rain_c)] <- 0
@@ -124,7 +121,7 @@ colSums(is.na(combined_data))
 # is_rain
 combined_data <- combined_data %>% 
   mutate(is_rain = ifelse((rain_c > 0 | snow_c > 0),1,0))
-table(combined_data$is_rain) # 0: 154,450 1: 16,175
+table(combined_data$is_rain) # 0: 164,825 1: 17,050
 
 # month, week
 combined_data <- combined_data %>% 
@@ -132,7 +129,10 @@ combined_data <- combined_data %>%
          week = ceiling(day(reg_date) /7))
 
 # is_holiday
-holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", "2022-10-03",  "2022-10-09", "2022-10-10", "2022-12-25", "2023-01-01", "2023-01-21","2023-01-22", "2023-01-23", "2023-01-24", "2023-03-01", "2023-05-05","2023-05-27", "2023-06-06", "2023-08-15", "2023-09-28", "2023-09-29","2023-09-30", "2023-10-03", "2023-10-09", "2023-12-25"))
+holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
+"2022-10-03",  "2022-10-09", "2022-10-10", "2022-12-25", "2023-01-01", "2023-01-21","2023-01-22", "2023-01-23", "2023-01-24", "2023-03-01", "2023-05-01", "2023-05-05","2023-05-27", "2023-05-29", "2023-06-06", "2023-08-15", "2023-09-28", "2023-09-29",
+"2023-09-30", "2023-10-03", "2023-10-09", "2023-12-25"))
+
 
 combined_data$reg_date <- as.Date(combined_data$reg_date)
 combined_data <- combined_data %>% 
@@ -165,9 +165,9 @@ colSums(is.na(combined_data))
 
 
 table(combined_data$hour_reg)
-dim(combined_data) #170,625
+dim(combined_data) #181,875
 min(combined_data$reg_date) #2022-01-01
-max(combined_data$reg_date) #2023-03-31
+max(combined_data$reg_date) #2023-04-30
 str(combined_data)
 
 # filled_data[c("rider_cnt", "order_cnt", "pick_rgn2_nm")] %>% tbl_summary( by = "pick_rgn2_nm") %>% add_p()
