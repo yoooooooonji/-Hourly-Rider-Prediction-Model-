@@ -27,7 +27,7 @@ max(data$reg_date) # 2023-04-30
 data$day_of_reg <- factor(data$day_of_reg, levels = c('월요일', '화요일', '수요일', '목요일','금요일', '토요일','일요일'))
 
 table(data$day_of_reg, data$month)
-dim(data) #181,875
+dim(data) #290,775
 table(data$pick_rgn2_nm) 
 
 
@@ -61,7 +61,7 @@ data <- data  %>%
 mutate(outlier = case_when (is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) ~ 1,
                             TRUE ~ 0))
 
-table(data$outlier) #7247
+table(data$outlier) # 8,981
 
 # outlier median 값으로 대체 
 data <- data %>% 
@@ -71,13 +71,14 @@ mutate(rider_cnt_2 = case_when(outlier == 1 ~ median(rider_cnt),
 
 table(data$outlier, data$day_of_reg) #월, 수,일 많음
 
+
 # 3. 자기상관성 확인
 # ACF : 자기상관 함수
 # PACF : 부분자기상관 함수
 
 library(timetk)
 acf_result <- data  %>% group_by(pick_rgn2_nm) %>% 
-tk_acf_diagnostics(datetime, rider_cnt_2, .lags=150)
+tk_acf_diagnostics(datetime, rider_cnt_2, .lags=200)
 
 tb <- acf_result  %>% group_by(lag) %>% summarise(mean = mean(ACF))
 

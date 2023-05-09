@@ -21,18 +21,32 @@ answer <- read_excel("/Users/yj.noh/Desktop/answer_data.xlsx")
 predict$날짜 <- as.Date(predict$날짜)
 answer$reg_date <- as.Date(answer$reg_date)
 
-predict <- predict  %>% filter(날짜 < '2023-05-08')
+min(predict$날짜)
+max(predict$날짜)
+min(answer$reg_date)
+max(answer$reg_date)
+
+answer <- answer  %>% filter(pick_rgn1_nm == '서울특별시' & hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
+
+predict <- predict  %>% filter(시간대 %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
+
+dim(predict)
+dim(answer)
 
 library(Metrics)
 
 predict <- left_join(predict, answer[c("reg_date", "hour_reg", "pick_rgn2_nm", "라이더수")] , by = c("날짜" = "reg_date", "시간대" = "hour_reg", "지역구" = "pick_rgn2_nm"))
 
+head(predict)
+
 predict <- predict  %>% 
 mutate(error = abs(예측값 - 라이더수))
 
+colSums(is.na(predict))
+
 write.csv(predict, "predict_data.csv", row.names = FALSE, fileEncoding = "cp949")
 
-mae(predict$예측값, predict$라이더수) # 39.32
+mae(predict$예측값, predict$라이더수) # 35.98
 
 # 일자별
 result_day <- aggregate(abs(predict$예측값 - predict$라이더수), 
