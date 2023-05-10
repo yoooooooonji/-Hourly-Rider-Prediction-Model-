@@ -151,20 +151,6 @@ colSums(is.na(combined_data))
 
 # colSums(is.na(filled_data)) 
 
-# w-1,2,3,4 동일 요일 동시간대 주문수/라이더수
-# filled_data <- filled_data %>%  
-#   group_by(day_of_reg2, hour_reg2, location) %>% 
-#   arrange(reg_date_2) %>% 
-#   mutate(order_cnt_w_1 = lag(order_cnt, n=1),
-#          order_cnt_w_2 = lag(order_cnt, n=2),
-#          order_cnt_w_3 = lag(order_cnt, n=3),
-#          order_cnt_w_4 = lag(order_cnt, n=4),
-#          rider_cnt_w_1 = lag(rider_cnt, n=1),
-#          rider_cnt_w_2 = lag(rider_cnt, n=2),
-#          rider_cnt_w_3 = lag(rider_cnt, n=3),
-#          rider_cnt_w_4 = lag(rider_cnt, n=4))
-
-
 table(combined_data$hour_reg)
 dim(combined_data) #290,775
 min(combined_data$reg_date) #2022-01-01

@@ -80,7 +80,8 @@ library(timetk)
 acf_result <- data  %>% group_by(pick_rgn2_nm) %>% 
 tk_acf_diagnostics(datetime, rider_cnt_2, .lags=200)
 
-tb <- acf_result  %>% group_by(lag) %>% summarise(mean = mean(ACF))
+tb_acf <- acf_result  %>% group_by(lag) %>% summarise(mean_acf = mean(ACF), mean_pacf = mean(PACF))
+
 
 # 4. 그래프
 graph1 <- data  %>% 
@@ -95,6 +96,20 @@ geom_boxplot() +
 labs(title = '월별 라이더수 분포', x = '시간', y = '라이더수')
 
 graph2
+
+#w-1,2,3,4 동일 요일 동시간대 주문수/라이더수
+library(zoo)
+data <- data %>%
+  arrange(datetime, pick_rgn2_nm) %>% 
+  group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
+  mutate(rider_cnt_w_1 = na.locf(rider_cnt_2, n=1),
+         rider_cnt_w_2 = na.locf(rider_cnt_2, n=2),
+         rider_cnt_w_3 = na.locf(rider_cnt_2, n=3),
+         rider_cnt_w_4 = na.locf(rider_cnt_2, n=4),
+         order_cnt_w_1 = na.locf(order_cnt, n=1),
+         order_cnt_w_2 = na.locf(order_cnt, n=2),
+         order_cnt_w_3= na.locf(order_cnt, n=3),
+         order_cnt_w_4 = na.locf(order_cnt, n=4))
 
 # 그래프 저장
 # ggsave("강남구 월별 (raw).png", raw1)

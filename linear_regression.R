@@ -18,18 +18,6 @@ data <- read.csv("final_data.csv", fileEncoding = "cp949")
 dim(data) #181,875
 str(data)
 
-# 파생변수 생성 -> w-1,2,3,4,5,6,7 동일 요일, 동시간대 주문수/라이더수
-data <- data %>% 
-group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
-mutate(rider_cnt_w_1 = lag(rider_cnt_2, n=1),
-        rider_cnt_w_2 = lag(rider_cnt_2, n=2),
-        rider_cnt_w_3 = lag(rider_cnt_2, n=3),
-        rider_cnt_w_4 = lag(rider_cnt_2, n=4),
-        order_cnt_w_1 = lag(order_cnt, n=1),
-        order_cnt_w_2 = lag(order_cnt, n=2),
-        order_cnt_w_3 = lag(order_cnt, n=3),
-        order_cnt_w_4 = lag(order_cnt, n=4))
-
 
 colSums(is.na(data))
 
