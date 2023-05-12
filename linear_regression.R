@@ -15,17 +15,14 @@ ipak(pkg)
 # data load 
 getwd()
 data <- read.csv("final_data.csv", fileEncoding = "cp949")
-dim(data) #181,875
+dim(data) #290,775
 str(data)
-
 
 colSums(is.na(data))
 
-data <- data  %>% 
-filter(!is.na(rider_cnt_w_4))
+data <- data  %>% filter(!is.na(rider_cnt_w_4))
 
-dim(data) #161,175
-
+dim(data)
 min(data$reg_date) #2022-01-29
 max(data$reg_date) #2023-04-30
 
@@ -84,11 +81,19 @@ head(train_set)
 
 library(forecast)
 library(MASS)
+library(caret)
 
 # all
 model <- lm(rider_cnt_2 ~., data = train_set)
-summary(model) # 0.9823
+summary(model) # 0.9887
 accuracy(model) # 14.31, 21.07
+
+# 10-fold cross-validation 수행
+set.seed(123)
+train_control <- trainControl(method = "cv", number = 10)
+lm_model <- train(rider_cnt_2 ~ ., data = train_set, method = "lm", trainControl = train_control)
+summary(lm_model) # 0.9887
+
 
 # p-value 0.05 
 model_pv <- lm(rider_cnt_2 ~ pick_rgn2_nm + hour_reg + day_of_reg + is_rain + month + week + is_holiday + rider_cnt_w_1 + rider_cnt_w_2 + rider_cnt_w_3 + rider_cnt_w_4 + order_cnt_w_1 + order_cnt_w_2 + order_cnt_w_4, data = train_set)
@@ -115,7 +120,7 @@ lines(model_AIC$fitted.values, col = "red")
 
 # test set 
 # accuracy 
-y_pred <- predict(model_pv, newdata = test_set) # 모델의 예측값
+y_pred <- predict(lm_model, newdata = test_set) # 모델의 예측값
 #y_pred_rescaled <- y_pred * (test_max - test_min) + test_min
 
 
@@ -134,9 +139,9 @@ r_square <- r_square(actual, y_pred)
 mae <- mae(actual, y_pred)
 error = y_pred - actual
 
-rmse # 20.30
+rmse # 16.09
 r_square # 0.98
-mae # 14.47
+mae # 10.56
 
 # result <- data.frame(y_pred, actual,test$reg_date, test$hour_reg,test$day_of_reg, test$pick_rgn2_nm, test$month, test$is_holiday, error)
 
@@ -146,7 +151,7 @@ result_hour <- aggregate(abs(y_pred - actual),
                     by = list(test_set$hour_reg, test_set$pick_rgn2_nm), 
                     FUN = mean)
 
-result_hour <- data.frame(result2)
+result_hour 
 
 # write.csv(result2, "result4_2.csv", row.names = FALSE, fileEncoding = "cp949")
 

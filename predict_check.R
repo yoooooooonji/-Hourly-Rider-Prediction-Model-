@@ -74,3 +74,69 @@ result_total <- aggregate(abs(predict$예측값 - predict$라이더수),
 result_total
 
 write.csv(result_total, "result_total.csv", row.names = FALSE, fileEncoding = "cp949")
+
+
+
+
+
+
+
+# dataset 
+# 0. install packages 
+options(scipen=10)
+
+ipak <-function(pkg){
+  new.pkg<-pkg[!(pkg %in% installed.packages()[,"Package"])]
+  if(length(new.pkg))
+    install.packages(new.pkg,dependencies=TRUE)
+  sapply(pkg,require,character.only=TRUE)
+}
+
+pkg <- c("readr", "dplyr", "tidytext", "tidyverse", "lubridate", "reshape2", "psych", "gtsummary", "readxl", "MASS") # nolint
+ipak(pkg)
+
+##########################################################################################################################################################
+
+# data load
+gn <- read_excel("/Users/yj.noh/Desktop/check_data.xlsx", sheet = 1) 
+sc <- read_excel("/Users/yj.noh/Desktop/check_data.xlsx", sheet = 2)
+
+data <- rbind(gn,sc)
+dim(data)
+head(data)
+
+data$datetime <- as.Date(data$datetime)
+data$hour <- as.factor(hour(data$hour))
+
+# total
+library(Metrics)
+mae(data$actual, data$forecast_arima) #43.87
+mae(data$actual, data$forecast_lm) #32.61
+
+# 일자별
+result_day <- aggregate(cbind(abs(data$forecast_arima - data$actual), 
+                               abs(data$forecast_lm - data$actual)),
+                        by = list(data$datetime), 
+                        FUN = mean)
+result_day
+
+# 시간대별 
+result_hour <- aggregate(cbind(abs(data$forecast_arima - data$actual), 
+                               abs(data$forecast_lm - data$actual)),
+                        by = list(data$hour), 
+                        FUN = mean)
+result_hour
+table(data$hour)
+# 지역별
+result_rgn2 <- aggregate(cbind(abs(data$forecast_arima - data$actual), 
+                               abs(data$forecast_lm - data$actual)),
+                        by = list(data$pick_rgn2_nm),
+                    FUN = mean)
+result_rgn2
+
+# 지역별, 시간대별 
+result_total <- aggregate(cbind(abs(data$forecast_arima - data$actual), 
+                               abs(data$forecast_lm - data$actual)),
+                    by = list(data$pick_rgn2_nm, data$hour), 
+                    FUN = mean)
+result_total
