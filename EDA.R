@@ -49,27 +49,27 @@ table(data$pick_rgn2_nm)
 # table(test$hour_reg) # 11 : 402, 17 : 182 
 
 # IQR Rule-based Anomaly Detection 
-data <- data %>% 
-group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
-mutate(q1 = quantile(rider_cnt, 0.25),
-      q3 = quantile(rider_cnt, 0.75),
-      IQR1.5 = 1.5*(quantile(rider_cnt, 0.75) - quantile(rider_cnt, 0.25)))
+# data <- data %>% 
+# group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
+# mutate(q1 = quantile(rider_cnt, 0.25),
+#       q3 = quantile(rider_cnt, 0.75),
+#       IQR1.5 = 1.5*(quantile(rider_cnt, 0.75) - quantile(rider_cnt, 0.25)))
 
-summary(data)
+# summary(data)
 
-data <- data  %>% 
-mutate(outlier = case_when (is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) ~ 1,
-                            TRUE ~ 0))
+# data <- data  %>% 
+# mutate(outlier = case_when (is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) ~ 1,
+#                             TRUE ~ 0))
 
-table(data$outlier) # 8,981
+# table(data$outlier) # 8,981
 
-# outlier median 값으로 대체 
-data <- data %>% 
-group_by(pick_rgn2_nm, day_of_reg, hour_reg)  %>%
-mutate(rider_cnt_2 = case_when(outlier == 1 ~ median(rider_cnt),
-                              TRUE ~ rider_cnt))
+# # outlier median 값으로 대체 
+# data <- data %>% 
+# group_by(pick_rgn2_nm, day_of_reg, hour_reg)  %>%
+# mutate(rider_cnt_2 = case_when(outlier == 1 ~ median(rider_cnt),
+#                               TRUE ~ rider_cnt))
 
-table(data$outlier, data$day_of_reg) #월, 수,일 많음
+# table(data$outlier, data$day_of_reg) #월, 수,일 많음
 
 
 # 3. 자기상관성 확인
@@ -97,20 +97,7 @@ labs(title = '월별 라이더수 분포', x = '시간', y = '라이더수')
 
 graph2
 
-#w-1,2,3,4 동일 요일 동시간대 주문수/라이더수
-library(zoo)
 
-data <- data %>%
-  arrange(datetime, pick_rgn2_nm) %>% 
-  group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
-  mutate(rider_cnt_w_1 = lag(rider_cnt_2, n=1),
-         rider_cnt_w_2 = lag(rider_cnt_2, n=2),
-         rider_cnt_w_3 = lag(rider_cnt_2, n=3),
-         rider_cnt_w_4 = lag(rider_cnt_2, n=4),
-         order_cnt_w_1 = lag(order_cnt, n=1),
-         order_cnt_w_2 = lag(order_cnt, n=2),
-         order_cnt_w_3 = lag(order_cnt, n=3),
-         order_cnt_w_4 = lag(order_cnt, n=4))
 
 # 그래프 저장
 # ggsave("강남구 월별 (raw).png", raw1)
