@@ -40,7 +40,7 @@ table(data$hour_reg)
 data <- data  %>% 
 filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 
-dim(data) 186,000
+dim(data) # 186,000
 table(data$hour_reg) # 결측치 없음. 
 
 # NA 채우기 - time table
@@ -122,7 +122,7 @@ max(combined_data$datetime) # "2023-05-11 23:00:00 UTC"
 # month, week
 combined_data <- combined_data %>% 
   mutate(month = month(reg_date),
-         week = ceiling(day(reg_date) /7))
+         week = ceiling(day(reg_date)/7))
 
 # is_holiday
 holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
@@ -131,9 +131,12 @@ holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "20
 
 combined_data$reg_date <- as.Date(combined_data$reg_date)
 combined_data <- combined_data %>% 
-  mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("SAT", "SUN")),1,0))
+  mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("토요일", "일요일")),1,0))
 
+table(combined_data$is_holiday)
+table(combined_data$day_of_reg)
 colSums(is.na(combined_data))
+
 
 
 #  이상치(outlier) 여부 파악

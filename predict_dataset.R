@@ -14,7 +14,7 @@ ipak(pkg)
 
 ##########################################################################################################################################################
 # data load
-data <- read_excel("/Users/yj.noh/Desktop/predict_data.xlsx") 
+data <- read_excel("/Users/yj.noh/Desktop/predict_data.xlsx")
 
 data <- data %>%
   dplyr::rename(rider_cnt = 라이더수,
@@ -36,8 +36,8 @@ dim(data) # 11,675
 table(data$pick_rgn2_nm)
 table(data$hour_reg) 
 
-# 9am ~ 23pm 
-data <- data  %>% 
+# 9am ~ 23pm
+data <- data  %>%
 filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 
 dim(data) #10125
@@ -61,11 +61,12 @@ holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "20
 "2023-09-30", "2023-10-03", "2023-10-09", "2023-12-25"))
 
 
+table(data$day_of_reg)
 data <- data %>% 
-  mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("SAT", "SUN")),1,0))
+  mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("토요일", "일요일")),1,0))
 
 colSums(is.na(data))
-
+table(data$is_holiday)
 
 #w-1,2,3,4 동일 요일 동시간대 주문수/라이더수
 library(zoo)
@@ -93,7 +94,7 @@ data<- data  %>% filter(reg_date >='2023-05-16')
 dim(data) #2250
 
 min(data$reg_date)
-min(data$datetime)
+#min(data$datetime)
 
 colSums(is.na(data))
 data<- subset(data, select = -c(pick_rgn1_nm))
@@ -103,16 +104,16 @@ train_data <- read.csv("combined_data.csv", fileEncoding = "cp949")
 train_data <- subset(train_data, select = -c(rider_cnt, order_cnt, temp_c, rain_c, snow_c, q1, q3, IQR1.5, outlier,datetime))
 
 str(train_data)
+str(test_data)
 
 test_data <- subset(data, select = -c(rider_cnt, order_cnt))
 test_data <- test_data  %>% mutate(rider_cnt_2 = NA)
 test_data <- test_data  %>% dplyr::select("pick_rgn2_nm","hour_reg", "reg_date", "day_of_reg", "is_rain", "month", "week", "is_holiday", "rider_cnt_2","rider_cnt_w_1","rider_cnt_w_2","rider_cnt_w_3","rider_cnt_w_4", "order_cnt_w_1", "order_cnt_w_2",  "order_cnt_w_3",  "order_cnt_w_4")
 
-
 test_data$reg_date <- as.Date(test_data$reg_date)
-train_data$reg_date <- as.Date(train_data$reg_dat)
+train_data$reg_date <- as.Date(train_data$reg_date)
 
-train_data$datetime <- as.POSIXct(train_data$datetime)
+#train_data$datetime <- as.POSIXct(train_data$datetime)
 
 min(test_data$reg_date)
 max(test_data$reg_date)
@@ -121,8 +122,7 @@ min(train_data$reg_date)
 max(train_data$reg_date)
 
 
-predict_data <- rbind(train_data,test_data)
-
+predict_data <- rbind(train_data, test_data)
 
 write.csv(predict_data, "predict_data.csv", row.names = FALSE, fileEncoding = "cp949")
 
