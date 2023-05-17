@@ -25,7 +25,6 @@ max(data$reg_date) #2023-05-15
 
 data$reg_date <- as.Date(data$reg_date)
 
-
 head(data)
 
 data <- data %>% 
@@ -62,6 +61,7 @@ holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "20
 
 
 table(data$day_of_reg)
+
 data <- data %>% 
   mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("토요일", "일요일")),1,0))
 
@@ -94,37 +94,17 @@ data<- data  %>% filter(reg_date >='2023-05-16')
 dim(data) #2250
 
 min(data$reg_date)
-#min(data$datetime)
-
+max(data$reg_date)
 colSums(is.na(data))
-data<- subset(data, select = -c(pick_rgn1_nm))
+
+str(data)
+
+data <- subset(data, select = -c(pick_rgn1_nm, rider_cnt, order_cnt))
+
+write.csv(data, "predict_data.csv", fileEncoding = "cp949", row.names = FALSE)
 
 
-train_data <- read.csv("combined_data.csv", fileEncoding = "cp949")
-train_data <- subset(train_data, select = -c(rider_cnt, order_cnt, temp_c, rain_c, snow_c, q1, q3, IQR1.5, outlier,datetime))
 
-str(train_data)
-str(test_data)
-
-test_data <- subset(data, select = -c(rider_cnt, order_cnt))
-test_data <- test_data  %>% mutate(rider_cnt_2 = NA)
-test_data <- test_data  %>% dplyr::select("pick_rgn2_nm","hour_reg", "reg_date", "day_of_reg", "is_rain", "month", "week", "is_holiday", "rider_cnt_2","rider_cnt_w_1","rider_cnt_w_2","rider_cnt_w_3","rider_cnt_w_4", "order_cnt_w_1", "order_cnt_w_2",  "order_cnt_w_3",  "order_cnt_w_4")
-
-test_data$reg_date <- as.Date(test_data$reg_date)
-train_data$reg_date <- as.Date(train_data$reg_date)
-
-#train_data$datetime <- as.POSIXct(train_data$datetime)
-
-min(test_data$reg_date)
-max(test_data$reg_date)
-
-min(train_data$reg_date)
-max(train_data$reg_date)
-
-
-predict_data <- rbind(train_data, test_data)
-
-write.csv(predict_data, "predict_data.csv", row.names = FALSE, fileEncoding = "cp949")
 
 
 
