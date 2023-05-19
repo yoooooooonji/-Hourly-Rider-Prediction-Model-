@@ -25,6 +25,7 @@ data <- data %>%
   dplyr::rename(rider_cnt = 라이더수,
                 order_cnt = 주문수)
 # seoul
+data$reg_date <- data$reg_date
 min(data$reg_date)
 max(data$reg_date)
 
@@ -43,6 +44,7 @@ filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 dim(data) # 186,000
 table(data$hour_reg) # 결측치 없음. 
 
+
 # NA 채우기 - time table
 # library(lubridate)
 # library(tidyr)
@@ -52,7 +54,7 @@ data$reg_date <- as.Date(data$reg_date)
 data$datetime <- ymd(data$reg_date) + hours(data$hour_reg)
 
 min(data$datetime) # "2022-01-01 09:00:00 UTC"
-max(data$datetime) # "2023-04-30 23:00:00 UTC"
+max(data$datetime) # "2023-05-11 23:00:00 UTC"
 
 # 모든 조합 생성
 #all_combinations <- seq(from = min(data$datetime), to = max(data$datetime),  by = "hour")
@@ -71,14 +73,22 @@ combined_data <- data %>%
          reg_date2 = as.Date(datetime),
          day_of_reg2 = substr(weekdays(as.Date(datetime)),1,3))
 
+combined_data <- combined_data  %>% 
+mutate(day_of_reg = case_when(day_of_reg2 %in% c('월요일','화요일','수요일','목요일') ~ '월목',
+                              day_of_reg2 == '금요일' ~ '금',
+                              day_of_reg2 %in% c('토요일','일요일') ~'주말'))
+
+table(combined_data$day_of_reg) # 26250, 106500, 53250
+table(combined_data$day_of_reg2) # 26250, 26625 
+
+
 # rider_cnt NA 채우기
 # library(zoo)
 str(combined_data)
-combined_data <- subset(combined_data, select = -c(reg_date, hour_reg, day_of_reg, pick_rgn1_nm))      
+combined_data <- subset(combined_data, select = -c(reg_date, hour_reg, pick_rgn1_nm))      
 combined_data <- combined_data  %>% 
 rename("hour_reg" = "hour_reg2",
-       "reg_date" = "reg_date2",
-       "day_of_reg" = "day_of_reg2")
+       "reg_date" = "reg_date2")
 
 str(combined_data)
 
@@ -131,17 +141,17 @@ holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "20
 
 combined_data$reg_date <- as.Date(combined_data$reg_date)
 combined_data <- combined_data %>% 
-  mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("토요일", "일요일")),1,0))
+  mutate(is_holiday1 = ifelse(reg_date %in% holiday_list | day_of_reg2 %in% c("토요일", "일요일"),1,0),
+        is_holiday2 = ifelse(reg_date %in% holiday_list,1,0))
 
-table(combined_data$is_holiday)
-table(combined_data$day_of_reg)
+table(combined_data$is_holiday1) #9,750 -> 59625
+table(combined_data$day_of_reg) #26250, 106500, 53250
 colSums(is.na(combined_data))
-
 
 
 #  이상치(outlier) 여부 파악
 combined_data <- combined_data %>% 
-group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
+group_by(pick_rgn2_nm, day_of_reg2, hour_reg, is_rain) %>% 
 mutate(q1 = quantile(rider_cnt, 0.25),
       q3 = quantile(rider_cnt, 0.75),
       IQR1.5 = 1.5*(quantile(rider_cnt, 0.75) - quantile(rider_cnt, 0.25)))
@@ -152,22 +162,23 @@ combined_data <- combined_data  %>%
 mutate(outlier = case_when (is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) ~ 1,
                             TRUE ~ 0))
 
-table(combined_data$outlier) # 7,528
+table(combined_data$outlier) # 7528
 
 # outlier median 값으로 대체 
 combined_data <- combined_data %>% 
-group_by(pick_rgn2_nm, day_of_reg, hour_reg)  %>%
+group_by(pick_rgn2_nm, day_of_reg2, hour_reg)  %>%
 mutate(rider_cnt_2 = case_when(outlier == 1 ~ median(rider_cnt),
                               TRUE ~ rider_cnt))
 
-table(combined_data$outlier, combined_data$day_of_reg) #월, 수, 일 많음
+table(combined_data$outlier, combined_data$day_of_reg) 
+
 
 #w-1,2,3,4 동일 요일 동시간대 주문수/라이더수
 library(zoo)
 
 combined_data <- combined_data %>%
   arrange(datetime, pick_rgn2_nm) %>% 
-  group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
+  group_by(pick_rgn2_nm, day_of_reg2, hour_reg, is_rain) %>% 
   mutate(rider_cnt_w_1 = lag(rider_cnt, n=1),
          rider_cnt_w_2 = lag(rider_cnt, n=2),
          rider_cnt_w_3 = lag(rider_cnt, n=3),
@@ -177,6 +188,8 @@ combined_data <- combined_data %>%
          order_cnt_w_3 = lag(order_cnt, n=3),
          order_cnt_w_4 = lag(order_cnt, n=4))
 
+colSums(is.na(combined_data)) #5250,10500, 15700, 20875
+
 #  NA fill ()
 # library(zoo)
 # filled_data <- combined_data %>% 
@@ -185,13 +198,24 @@ combined_data <- combined_data %>%
 #   mutate(rider_cnt_2 = ifelse(!is.na(na.locf(rider_cnt)), na.locf(rider_cnt), NA),
 #          order_cnt_2 = ifelse(!is.na(na.locf(order_cnt)), na.locf(order_cnt), NA))
 
-# colSums(is.na(filled_data)) 
+combined_data <- combined_data  %>% 
+filter(reg_date > '2022-01-28')
 
-table(combined_data$hour_reg)
-dim(combined_data) #186,000
-min(combined_data$reg_date) #2022-01-01
-max(combined_data$reg_date) #2023-05-11
-str(combined_data)
+colSums(is.na(combined_data)) #1450, 3875, 6700, 10375
+
+
+# 결측치 채우기 
+combined_data <- combined_data  %>% 
+mutate(rider_cnt_w_1 = ifelse(is.na(rider_cnt_w_1), rider_cnt_2, rider_cnt_w_1),
+       rider_cnt_w_2 = ifelse(is.na(rider_cnt_w_2), rider_cnt_w_1, rider_cnt_w_2),
+       rider_cnt_w_3 = ifelse(is.na(rider_cnt_w_3), rider_cnt_w_2, rider_cnt_w_3),
+       rider_cnt_w_4 = ifelse(is.na(rider_cnt_w_4), rider_cnt_w_3, rider_cnt_w_4),
+       order_cnt_w_1 = ifelse(is.na(order_cnt_w_1), order_cnt,   order_cnt_w_1),
+       order_cnt_w_2 = ifelse(is.na(order_cnt_w_2), order_cnt_w_1, order_cnt_w_2),
+       order_cnt_w_3 =  ifelse(is.na(order_cnt_w_3), order_cnt_w_2, order_cnt_w_3),
+       order_cnt_w_4 = ifelse(is.na(order_cnt_w_4), order_cnt_w_3, order_cnt_w_4))
+
+colSums(is.na(combined_data))
 
 # filled_data[c("rider_cnt", "order_cnt", "pick_rgn2_nm")] %>% tbl_summary( by = "pick_rgn2_nm") %>% add_p()
 # filled_data[c("rider_cnt","order_cnt","pick_rgn2_nm", "is_rain")] %>% tbl_summary(by="is_rain")  %>% add_p()
@@ -199,3 +223,4 @@ str(combined_data)
 # filled_data[c("rider_cnt","order_cnt","pick_rgn2_nm", "is_peak2")] %>% tbl_summary(by="is_peak2") %>% add_p()
 
 write.csv(combined_data, "combined_data.csv", row.names = FALSE, fileEncoding = "cp949")
+
