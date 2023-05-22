@@ -52,28 +52,19 @@ table(data$is_rain)
 data <- data  %>% 
   mutate(month = month(reg_date),
          week = ceiling(day(reg_date) /7),
-         day_of_reg = substr(weekdays(as.Date(reg_date)),1,3))
-
-# is_holiday
-holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
-"2022-10-03",  "2022-10-09", "2022-10-10", "2022-12-25", "2023-01-01", "2023-01-21","2023-01-22", "2023-01-23", "2023-01-24", "2023-03-01", "2023-05-01", "2023-05-05","2023-05-27", "2023-05-29", "2023-06-06", "2023-08-15", "2023-09-28", "2023-09-29",
-"2023-09-30", "2023-10-03", "2023-10-09", "2023-12-25"))
-
-
+         day_of_reg2 = substr(weekdays(as.Date(reg_date)),1,3),
+         day_of_reg = case_when(day_of_reg2 %in% c("토요일","일요일") ~"주말",
+                                day_of_reg2 == '금요일' ~"금",
+                                TRUE ~"월목"))
+table(data$day_of_reg2)
 table(data$day_of_reg)
-
-data <- data %>% 
-  mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg %in% c("토요일", "일요일")),1,0))
-
-colSums(is.na(data))
-table(data$is_holiday)
 
 #w-1,2,3,4 동일 요일 동시간대 주문수/라이더수
 library(zoo)
 
 data <- data %>%
   arrange(reg_date,pick_rgn2_nm) %>% 
-  group_by(pick_rgn2_nm, day_of_reg, hour_reg) %>% 
+  group_by(pick_rgn2_nm, day_of_reg2, hour_reg) %>% 
   mutate(rider_cnt_w_2 = lag(rider_cnt, n=1),
          rider_cnt_w_3 = lag(rider_cnt, n=2),
          rider_cnt_w_4 = lag(rider_cnt, n=3),
@@ -85,6 +76,7 @@ data <- data %>%
 str(data)
 
 # 정리
+# 정리
 data <- data  %>% mutate(reg_date = reg_date + 7,
                           rider_cnt_w_1 = rider_cnt,
                           order_cnt_w_1 = order_cnt)
@@ -93,11 +85,28 @@ data <- data  %>% mutate(reg_date = reg_date + 7,
 data<- data  %>% filter(reg_date >='2023-05-16')
 dim(data) #2250
 
+# is_holiday
+holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
+"2022-10-03",  "2022-10-09", "2022-10-10", "2022-12-25", "2023-01-01", "2023-01-21","2023-01-22", "2023-01-23", "2023-01-24", "2023-03-01", "2023-05-01", "2023-05-05","2023-05-27", "2023-05-29", "2023-06-06", "2023-08-15", "2023-09-28", "2023-09-29",
+"2023-09-30", "2023-10-03", "2023-10-09", "2023-12-25"))
+
+
+
+data <- data %>% 
+mutate(is_holiday = ifelse((reg_date %in% holiday_list) | (day_of_reg2 %in% c("토요일", "일요일")),1,0),
+          is_holiday2 = ifelse((reg_date %in% holiday_list),1,0))
+
+
+colSums(is.na(data))
+table(data$is_holiday)
+table(data$is_holiday2)
+
+dim(data) #2250
+
 min(data$reg_date)
 max(data$reg_date)
 colSums(is.na(data))
 
-str(data)
 
 data <- subset(data, select = -c(pick_rgn1_nm, rider_cnt, order_cnt))
 

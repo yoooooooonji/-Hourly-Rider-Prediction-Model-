@@ -32,7 +32,7 @@ max(data$reg_date)
 data <- data %>% 
   filter(pick_rgn1_nm == '서울특별시' & reg_date < max(data$reg_date))
 
-dim(data) # 215,117
+dim(data) # 219,476
 
 table(data$pick_rgn2_nm)
 table(data$hour_reg) 
@@ -54,7 +54,7 @@ data$reg_date <- as.Date(data$reg_date)
 data$datetime <- ymd(data$reg_date) + hours(data$hour_reg)
 
 min(data$datetime) # "2022-01-01 09:00:00 UTC"
-max(data$datetime) # "2023-05-11 23:00:00 UTC"
+max(data$datetime) # "2023-05-21 23:00:00 UTC"
 
 # 모든 조합 생성
 #all_combinations <- seq(from = min(data$datetime), to = max(data$datetime),  by = "hour")
@@ -124,10 +124,10 @@ colSums(is.na(combined_data))
 # is_rain
 combined_data <- combined_data %>% 
   mutate(is_rain = ifelse((rain_c > 0 | snow_c > 0),1,0))
-table(combined_data$is_rain) # 0: 168,475 1: 17525
+table(combined_data$is_rain) # 0: 172,200 1: 17550
 
 min(combined_data$datetime) # "2022-01-01 09:00:00 UTC"
-max(combined_data$datetime) # "2023-05-11 23:00:00 UTC"
+max(combined_data$datetime) # "2023-05-21 23:00:00 UTC"
 
 # month, week
 combined_data <- combined_data %>% 
@@ -144,8 +144,9 @@ combined_data <- combined_data %>%
   mutate(is_holiday1 = ifelse(reg_date %in% holiday_list | day_of_reg2 %in% c("토요일", "일요일"),1,0),
         is_holiday2 = ifelse(reg_date %in% holiday_list,1,0))
 
-table(combined_data$is_holiday1) #9,750 -> 59625
-table(combined_data$day_of_reg) #26250, 106500, 53250
+table(combined_data$is_holiday1) # 61125
+table(combined_data$is_holiday2) #9750
+table(combined_data$day_of_reg) 
 colSums(is.na(combined_data))
 
 
@@ -162,7 +163,7 @@ combined_data <- combined_data  %>%
 mutate(outlier = case_when (is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) ~ 1,
                             TRUE ~ 0))
 
-table(combined_data$outlier) # 7528
+table(combined_data$outlier) # 7513
 
 # outlier median 값으로 대체 
 combined_data <- combined_data %>% 
@@ -212,7 +213,7 @@ mutate(rider_cnt_w_1 = ifelse(is.na(rider_cnt_w_1), rider_cnt_2, rider_cnt_w_1),
        rider_cnt_w_4 = ifelse(is.na(rider_cnt_w_4), rider_cnt_w_3, rider_cnt_w_4),
        order_cnt_w_1 = ifelse(is.na(order_cnt_w_1), order_cnt,   order_cnt_w_1),
        order_cnt_w_2 = ifelse(is.na(order_cnt_w_2), order_cnt_w_1, order_cnt_w_2),
-       order_cnt_w_3 =  ifelse(is.na(order_cnt_w_3), order_cnt_w_2, order_cnt_w_3),
+       order_cnt_w_3 = ifelse(is.na(order_cnt_w_3), order_cnt_w_2, order_cnt_w_3),
        order_cnt_w_4 = ifelse(is.na(order_cnt_w_4), order_cnt_w_3, order_cnt_w_4))
 
 colSums(is.na(combined_data))
