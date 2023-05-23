@@ -24,6 +24,7 @@ data <- rbind(data1, data2)
 data <- data %>%
   dplyr::rename(rider_cnt = 라이더수,
                 order_cnt = 주문수)
+
 # seoul
 data$reg_date <- data$reg_date
 min(data$reg_date)
@@ -41,7 +42,7 @@ table(data$hour_reg)
 data <- data  %>% 
 filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 
-dim(data) # 186,000
+dim(data) # 189,750
 table(data$hour_reg) # 결측치 없음. 
 
 
@@ -78,8 +79,8 @@ mutate(day_of_reg = case_when(day_of_reg2 %in% c('월요일','화요일','수요
                               day_of_reg2 == '금요일' ~ '금',
                               day_of_reg2 %in% c('토요일','일요일') ~'주말'))
 
-table(combined_data$day_of_reg) # 26250, 106500, 53250
-table(combined_data$day_of_reg2) # 26250, 26625 
+table(combined_data$day_of_reg) 
+table(combined_data$day_of_reg2) 
 
 
 # rider_cnt NA 채우기
@@ -113,7 +114,6 @@ table(weather$hour)
 weather <- weather  %>% filter(hour %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 
 combined_data <- left_join(combined_data, weather[c("date_2","hour","temp_c","rain_c", "snow_c")], by = c("reg_date" = "date_2", "hour_reg" = "hour"))
-head(combined_data)
 
 # NA 
 combined_data$rain_c[is.na(combined_data$rain_c)] <- 0
@@ -148,6 +148,19 @@ table(combined_data$is_holiday1) # 61125
 table(combined_data$is_holiday2) #9750
 table(combined_data$day_of_reg) 
 colSums(is.na(combined_data))
+
+# is_holiday, is_rain 합친 파생변수 생성
+combined_data <- combined_data %>% 
+mutate(specific_value = ifelse(is_rain == 1 & is_holiday2 ==1 , 1, 0))
+
+# combined_data <- combined_data %>% 
+# mutate(specific_value = case_when(is_holiday2 == 0 & is_rain == 0 ~1,
+#                                   is_holiday2 == 0 & is_rain == 1 ~ 2, 
+#                                   is_holiday2 == 1 & is_rain == 0 ~ 3,
+#                                   is_holiday2 == 1 & is_rain == 1 ~ 4))
+
+
+table(combined_data$specific_value)
 
 
 #  이상치(outlier) 여부 파악
@@ -224,4 +237,5 @@ colSums(is.na(combined_data))
 # filled_data[c("rider_cnt","order_cnt","pick_rgn2_nm", "is_peak2")] %>% tbl_summary(by="is_peak2") %>% add_p()
 
 write.csv(combined_data, "combined_data.csv", row.names = FALSE, fileEncoding = "cp949")
+
 

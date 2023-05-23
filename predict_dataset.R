@@ -19,13 +19,8 @@ data <- read_excel("/Users/yj.noh/Desktop/predict_data.xlsx")
 data <- data %>%
   dplyr::rename(rider_cnt = 라이더수,
                 order_cnt = 주문수)
-# seoul
-min(data$reg_date) #2023-04-18
-max(data$reg_date) #2023-05-15
 
 data$reg_date <- as.Date(data$reg_date)
-
-head(data)
 
 data <- data %>% 
   filter(pick_rgn1_nm == '서울특별시' & reg_date < max(data$reg_date))
