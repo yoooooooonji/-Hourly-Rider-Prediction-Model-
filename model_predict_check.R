@@ -23,12 +23,6 @@ predict <- predict  %>% mutate(reg_date = as.Date(predict$datetime))
 min(predict$datetime)
 max(predict$datetime)
 
-# predict <- predict  %>% mutate(day_of_reg = weekdays(datetime))
-# table(predict$day_of_reg)
-
-# predict <- predict  %>% mutate(day_of_reg2 = case_when(day_of_reg %in% c("월요일", "화요일","수요일","목요일","금요일") ~"주중",
-#                                                       TRUE ~ "주말"))
-
 
 library(Metrics)
 mae(predict$y_test, predict$y_pred_test_LinearRegression)

@@ -14,8 +14,8 @@ ipak(pkg)
 #####################################################################################################
 # data load 
 getwd()
-data <- read.csv("final_data.csv", fileEncoding = "cp949")
-dim(data) #290,775
+data <- read.csv("combined_data.csv", fileEncoding = "cp949")
+dim(data) #179,250
 str(data)
 
 colSums(is.na(data))
@@ -24,12 +24,11 @@ data <- data  %>% filter(!is.na(rider_cnt_w_4))
 
 dim(data)
 min(data$reg_date) #2022-01-29
-max(data$reg_date) #2023-04-30
+max(data$reg_date) #2023-05-21
 
-str(data)
 
 #modeling
-var <-  c('pick_rgn2_nm', 'hour_reg','day_of_reg','is_rain','month','week','is_holiday')
+var <-  c('pick_rgn2_nm', 'hour_reg','day_of_reg','is_rain','month','week','is_holiday1', 'is_holiday2', 'specific_value')
 data[,var]<- lapply(data[,var], factor)
 
 # correlation
@@ -40,12 +39,12 @@ cor(data[c("rider_cnt_2", "order_cnt_w_1", "order_cnt_w_2","order_cnt_w_3","orde
 train <- data %>% 
   filter(reg_date <= '2022-12-31')
 
-dim(train) # 116,425
+dim(train) # 126,375
 
 test <- data %>% 
   filter(reg_date >= '2023-01-01')
 
-dim(test) # 44,750
+dim(test) # 52,875
 
 train_set <- subset(train, select = -c(datetime,rider_cnt, order_cnt, temp_c,rain_c, snow_c, q1,q3,IQR1.5, outlier, reg_date))
 test_set <- subset(test, select = -c(datetime,rider_cnt, order_cnt, temp_c,rain_c, snow_c, q1,q3,IQR1.5, outlier, reg_date))
@@ -53,36 +52,31 @@ test_set <- subset(test, select = -c(datetime,rider_cnt, order_cnt, temp_c,rain_
 str(train_set)
 head(train_set)
 
-# numeric variable mix-max scale
-
-# x 변수의 최소값과 최대값 저장
-# train_min <- min(train$rider_cnt)
-# train_max <- max(train$rider_cnt)
-# 
-# test_min <- min(test$rider_cnt)
-# test_max <- max(test$rider_cnt)
-# 
-# normalize <- function(x, na.rm = TRUE) {
-#   return((x- min(x)) /(max(x)-min(x)))
-# }
-# 
-# train_set[c('rider_cnt','temp_c', 'rain_c','order_cnt_w_1',
-#             'order_cnt_w_2','order_cnt_w_3','order_cnt_w_4','rider_cnt_w_1',
-#             'rider_cnt_w_2','rider_cnt_w_3','rider_cnt_w_4')] = normalize(train_set[c('rider_cnt','temp_c', 'rain_c','order_cnt_w_1',
-#                                                                                   'order_cnt_w_2','order_cnt_w_3','order_cnt_w_4','rider_cnt_w_1', 
-#                                                                                   'rider_cnt_w_2','rider_cnt_w_3','rider_cnt_w_4')])
-# 
-# test_set[c('rider_cnt','temp_c', 'rain_c','order_cnt_w_1',
-#             'order_cnt_w_2','order_cnt_w_3','order_cnt_w_4','rider_cnt_w_1',
-#             'rider_cnt_w_2','rider_cnt_w_3','rider_cnt_w_4')] = normalize(test_set[c('rider_cnt','temp_c', 'rain_c','order_cnt_w_1',
-#                                                                                       'order_cnt_w_2','order_cnt_w_3','order_cnt_w_4','rider_cnt_w_1', 
-#                                                                                       'rider_cnt_w_2','rider_cnt_w_3','rider_cnt_w_4')])
-# 
 
 library(forecast)
 library(MASS)
 library(caret)
 
+# is_holiday 결정
+tt <- lm(rider_cnt_2~is_holiday1, data = train_set)
+summary(tt)
+
+ss <- lm(rider_cnt_2 ~ is_holiday2, data= train_set)
+summary(ss) # 유의미하지않음. 
+
+# specific_value # 무의미 
+sv <- lm(rider_cnt_2 ~ specific_value, data = train_set)
+summary(sv)
+
+#is_rain 유의미 
+ir <- lm(rider_cnt_2 ~ is_rain, data = train_set)
+summary(ir)
+
+# month, week, day_of_reg, day_of_reg2, hour_reg
+mr <- lm(rider_cnt_2 ~ month, data = train_set)
+summary(mr)
+
+wk <- 
 # all
 model <- lm(rider_cnt_2 ~., data = train_set)
 summary(model) # 0.9887
