@@ -16,60 +16,23 @@ ipak(pkg)
 
 data <- read.csv("combined_data.csv", fileEncoding= "cp949")
 
-dim(data) 
+data[c("is_rain", "rider_cnt_2", "order_cnt")] %>% tbl_summary(by="is_rain") %>% add_p()
+data[c("is_holiday", "rider_cnt_2", "order_cnt")] %>% tbl_summary(by="is_holiday") %>% add_p()
 
-data <- data %>% 
-filter(is_rain ==1 & is_holiday ==1)
+tt <- data %>% filter(pick_rgn2_nm == '강남구')
 
-dim(data) # 5775
+tt[c("is_rain", "rider_cnt_2", "order_cnt")] %>% tbl_summary(by="is_rain") %>% add_p()
+tt[c("is_holiday", "rider_cnt_2", "order_cnt")] %>% tbl_summary(by="is_holiday") %>% add_p()
 
-data <- data  %>% 
-mutate(cnt = order_cnt/rider_cnt,
-        month = month(reg_date))
+ss <- data %>% filter(pick_rgn2_nm == '용산구')
 
-summary(data$cnt)
-sd(data$cnt)
+ss[c("is_rain", "rider_cnt_2", "order_cnt")] %>% tbl_summary(by="is_rain") %>% add_p()
+ss[c("is_holiday", "rider_cnt_2", "order_cnt")] %>% tbl_summary(by="is_holiday") %>% add_p()
 
+data$is_rain <- as.factor(data$is.rain)
+data$is_holiday <- as.factor(data$is_holiday)
+data$pick_rgn2_nm <- as.factor(data$pick_rgn2_nm)
 
-month1 <- data %>% 
-group_by(month) %>% 
-summarise(mean = mean(cnt),
-            sd = sd(cnt))
-month1
-
-hour1 <- data %>% 
-group_by(hour_reg) %>% 
-summarise(mean = mean(cnt),
-            sd = sd(cnt))
-hour1
-
-
-df <- read.csv("combined_data.csv", fileEncoding= "cp949")
-tt <- df  %>% filter(is_rain !=1)
-
-tt <- tt  %>% 
-mutate(cnt = order_cnt/rider_cnt,
-        month = month(reg_date))
-
-summary(tt$cnt) #1.8
-sd(tt$cnt) #0.33
-
-
-month2 <- tt %>% 
-group_by(month) %>% 
-summarise(mean = mean(cnt),
-            sd = sd(cnt))
-month2
-
-hour2 <- tt %>% 
-group_by(hour_reg) %>% 
-summarise(mean = mean(cnt),
-            sd = sd(cnt))
-hour2
-
-month1
-month2
-
-hour1
-hour2
-
+# Kruskal-Wallis 검정을 위해 kruskal.test 함수 사용
+model <- aov(rider_cnt_2~ pick_rgn2_nm*is_rain*is_holiday, data = data)
+summary(model)

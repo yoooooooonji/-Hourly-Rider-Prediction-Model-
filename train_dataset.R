@@ -51,16 +51,11 @@ combined_data <- data %>%
          day_of_reg = substr(weekdays(as.Date(datetime)),1,3))
 
 table(combined_data$day_of_reg) 
-
-
-# rider_cnt NA 채우기
 str(combined_data)
 combined_data <- subset(combined_data, select = -c(reg_date, hour_reg, pick_rgn1_nm))      
 combined_data <- combined_data  %>% 
 rename("hour_reg" = "hour_reg2",
        "reg_date" = "reg_date2")
-
-str(combined_data)
 
 # weather
 weather1 <- read.csv("/Users/yj.noh/Desktop/weather_2022.csv", fileEncoding = "cp949") 
@@ -120,17 +115,18 @@ max(combined_data$datetime)
 
 #  이상치(outlier) 여부 파악
 combined_data <- combined_data %>% 
-group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
+group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain, is_holiday) %>% 
 mutate(q1 = quantile(rider_cnt, 0.25),
       q3 = quantile(rider_cnt, 0.75),
       IQR1.5 = 1.5*(quantile(rider_cnt, 0.75) - quantile(rider_cnt, 0.25)))
 
 
 combined_data <- combined_data  %>% 
-mutate(outlier = case_when (is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) ~ 1,
+mutate(outlier = case_when ((is_rain == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) | 
+is_holiday == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5)) ~ 1,
                             TRUE ~ 0))
 
-table(combined_data$outlier) # 7513
+table(combined_data$outlier) # 7513 -> 6407
 
 # outlier median 값으로 대체 
 combined_data <- combined_data %>% 
@@ -146,7 +142,7 @@ library(zoo)
 
 combined_data <- combined_data %>%
   arrange(datetime, pick_rgn2_nm) %>% 
-  group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>% 
+  group_by(pick_rgn2_nm, day_of_reg, hour_reg) %>% 
   mutate(rider_cnt_w_1 = lag(rider_cnt, n=1),
          rider_cnt_w_2 = lag(rider_cnt, n=2),
          rider_cnt_w_3 = lag(rider_cnt, n=3),
