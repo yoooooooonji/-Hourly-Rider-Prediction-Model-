@@ -117,8 +117,8 @@ str(predict)
 predict <- predict %>%
   mutate(
          median_model = apply(dplyr::select(., c(y_pred_test_Lasso, y_pred_test_LGBMRegressor, y_pred_test_RandomForestRegressor)), 1, median, na.rm = TRUE),
-        weight1_model = ((y_pred_test_Lasso*0.967159) + (y_pred_test_LGBMRegressor*0.969086) + (y_pred_test_RandomForestRegressor*0.967943)) / (0.967159+0.969086+0.967943),
-        weight2_model = ((y_pred_test_Lasso*10.048993) + (y_pred_test_LGBMRegressor* 9.429600) + (y_pred_test_RandomForestRegressor* 9.417607)) / (10.048993+9.429600+9.417607))
+        weight1_model = ((y_pred_test_Lasso*0.968592) + (y_pred_test_LGBMRegressor*0.968592) + (y_pred_test_RandomForestRegressor*0.973041)) / (0.968592+0.968592+0.973041),
+        weight2_model = ((y_pred_test_Lasso*10.036040) + (y_pred_test_LGBMRegressor* 9.710589) + (y_pred_test_RandomForestRegressor*9.081697 )) / (10.036040+9.710589+9.081697))
 
 
 # MAE, RMSE, MAPE 계산하기

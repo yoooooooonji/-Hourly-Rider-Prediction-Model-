@@ -21,21 +21,22 @@ buf_df <- df %>%
 filter(as.Date(datetime) >= '2023-04-09' & '2023-05-08' >= as.Date(datetime))
 
 test_df <- df  %>% 
-filter(as.Date(datetime) >= '2023-05-08')
+filter(as.Date(datetime) > '2023-05-08')
 
 min(buf_df$datetime) # 2023-04-09
 max(buf_df$datetime) # 2023-05-08
 
-min(test_df$datetime) #2023-05-08
+min(test_df$datetime) #2023-05-09
 max(test_df$datetime) #2023-05-21
-
 
 buffer_table <- buf_df %>% 
 group_by(pick_rgn2_nm, is_rain, is_holiday) %>% 
 summarise(buffer_value = mean(y_test/y_pred_test_avg))
 
+test_df <- left_join (test_df, buffer_table, by = c("pick_rgn2_nm","is_rain","is_holiday"))
 
-test_df <- left_join (test_df, buffer_table, by = c("pick_rgn2_nm", "is_rain","is_holiday"))
+colSums(is.na(test_df))
+
 test_df <- test_df  %>% 
 mutate(y_pred_test_buf = y_pred_test_avg * buffer_value)
 
@@ -46,20 +47,20 @@ mutate(y_pred_test_buf = y_pred_test_avg * buffer_value)
 # 보정계수 적절성 확인
 library(Metrics)
 
-mae_lasso <- mae(test_df$y_test, test_df$y_pred_test_Lasso)
-mae_lgbm <- mae(test_df$y_test, test_df$y_pred_test_LGBMRegressor)
-mae_rf <- mae(test_df$y_test, test_df$y_pred_test_RandomForestRegressor)
-mae_raw  <- mae(test_df$y_test, test_df$y_pred_test_avg)
-mae_buffer <- mae(test_df$y_test, test_df$y_pred_test_buf)
+mae(test_df$y_test, test_df$y_pred_test_avg)
+mae(test_df$y_test, test_df$y_pred_test_buf)
 
-mae_lasso 
-mae_lgbm 
-mae_rf 
-mae_raw 
-mae_buffer 
+mape(test_df$y_test, test_df$y_pred_test_avg)*100
+mape(test_df$y_test, test_df$y_pred_test_buf)*100
 
 
-# 시간대별 확인
+# group_s
+result_s <-  aggregate(cbind(abs(test_df$y_test - test_df$y_pred_test_avg), 
+                               abs(test_df$y_test - test_df$y_pred_test_buf)),
+                        by = list(test_df$group_s), 
+                        FUN = mean)
+result_s
+
 result_hour <-  aggregate(cbind(abs(test_df$y_test - test_df$y_pred_test_avg), 
                                abs(test_df$y_test - test_df$y_pred_test_buf)),
                         by = list(test_df$hour_reg), 

@@ -108,7 +108,7 @@ combined_data <- combined_data %>%
             is_holiday2 = ifelse(reg_date %in% holiday_list | day_of_reg %in% c("토요일", "일요일"),1,0))
 
 table(combined_data$is_holiday)  # 9750
-table(combined_data$is_holiday2)
+table(combined_data$is_holiday2) #61125
 table(combined_data$day_of_reg) 
 colSums(is.na(combined_data))
 
@@ -159,7 +159,7 @@ library(zoo)
 
 combined_data <- combined_data %>%
   arrange(datetime, pick_rgn2_nm) %>% 
-  group_by(pick_rgn2_nm, day_of_reg, hour_reg) %>% 
+  group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain) %>%  # is_rain 
   mutate(rider_cnt_w_1 = lag(rider_cnt, n=1),
          rider_cnt_w_2 = lag(rider_cnt, n=2),
          rider_cnt_w_3 = lag(rider_cnt, n=3),
@@ -201,17 +201,18 @@ mutate(group_s = case_when(day_of_reg %in% c('월요일','화요일','수요일'
                            day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==1 ~ "H"))
 
 
-combined_data <- combined_data %>% 
-mutate(group_s2 = case_when(day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 0  & is_rain ==0 ~ "A",
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 0  & is_rain ==1 ~ "B", 
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 1  & is_rain ==0 ~ "B", 
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 1  & is_rain ==1 ~ "D",
-                           day_of_reg %in% c('토요일','일요일') & is_holiday == 0  & is_rain ==0 ~ "D",
-                           day_of_reg %in% c('토요일','일요일') & is_holiday == 0  & is_rain ==1 ~ "F",
-                           day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==0 ~ "F",
-                           day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==1 ~ "H"))
+# combined_data <- combined_data %>% 
+# mutate(group_s2 = case_when(day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 0  & is_rain ==0 ~ "A",
+#                            day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 0  & is_rain ==1 ~ "B", 
+#                            day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 1  & is_rain ==0 ~ "B", 
+#                            day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 1  & is_rain ==1 ~ "D",
+#                            day_of_reg %in% c('토요일','일요일') & is_holiday == 0  & is_rain ==0 ~ "D",
+#                            day_of_reg %in% c('토요일','일요일') & is_holiday == 0  & is_rain ==1 ~ "F",
+#                            day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==0 ~ "F",
+#                            day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==1 ~ "H"))
 
 table(combined_data$group_s)
-table(combined_data$group_s2)
+#table(combined_data$group_s2)
+#combined_data <- subset(combined_data, select = -c(group_s2))
 
 write.csv(combined_data, "combined_data.csv", row.names = FALSE, fileEncoding = "cp949")
