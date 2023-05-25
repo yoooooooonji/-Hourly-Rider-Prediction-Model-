@@ -21,16 +21,43 @@ data$reg_date <- as.Date(data$reg_date)
 data$datetime <- as.POSIXct(data$datetime)
 
 #str(data)
-min(data$reg_date) # 2022-01-01
-max(data$reg_date) # 2023-04-30
+min(data$reg_date) # 2022-01-29
+max(data$reg_date) # 2023-05-21
+str(data)
 
-data$day_of_reg <- factor(data$day_of_reg, levels = c('월요일', '화요일', '수요일', '목요일','금요일', '토요일','일요일'))
+# 그룹 8개로 나누기 
+# day_of_reg, is_rain, is_holiday 
 
-table(data$day_of_reg, data$month)
-dim(data) #290,775
-table(data$pick_rgn2_nm) 
+data <- data %>% 
+mutate(group_s = case_when(day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 0  & is_rain ==0 ~ "A",
+                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 0  & is_rain ==1 ~ "B", 
+                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 1  & is_rain ==0 ~ "C", 
+                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 1  & is_rain ==1 ~ "D",
+                           day_of_reg %in% c('토요일','일요일') & is_holiday == 0  & is_rain ==0 ~ "E",
+                           day_of_reg %in% c('토요일','일요일') & is_holiday == 0  & is_rain ==1 ~ "F",
+                           day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==0 ~ "G",
+                           day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==1 ~ "H"))
+
+table(data$group_s)                           
+
+grouped_data <- split(data, data$group_s)
+groupA <- data  %>% filter(group_s == "A")
+groupB <- data  %>% filter(group_s == "B")
+groupC <- data  %>% filter(group_s == "C")
+groupD <- data  %>% filter(group_s == "D")
+groupE <- data  %>% filter(group_s == "E")
+groupF <- data  %>% filter(group_s == "F")
+groupG <- data  %>% filter(group_s == "G")
+groupH <- data  %>% filter(group_s == "H")
 
 
+graphA <- groupA  %>% 
+ggplot(aes(as.factor(hour_reg),rider_cnt)) +
+geom_boxplot() +
+labs(title = '시간대별 라이더수 분포', x = '시간', y = '라이더수')
+graphA
+
+##########################################################################################################################################################
 # 2. 이상치 여부 파악
 
 # TSL 분해 방법 (절단이 안되었을 경우에 사용 가능)
@@ -105,4 +132,4 @@ graph2
 # ggsave("강남구 시간대별 (raw).png", raw2)
 # ggsave("강남구 시간대별 (cleaned).png", ch2)
 
-write.csv(data, "final_data.csv", row.names = FALSE, fileEncoding = "cp949")
+#write.csv(data, "final_data.csv", row.names = FALSE, fileEncoding = "cp949")

@@ -13,12 +13,24 @@ ipak(pkg)
 
 #####################################################################################################
 # data load 
-getwd()
+
 data <- read.csv("combined_data.csv", fileEncoding = "cp949")
 dim(data) #179,250
 str(data)
 
 colSums(is.na(data))
+
+train <- data  %>% filter(reg_date <= '2022-12-31')
+test <- data  %>% filter(reg_date >= '2023-01-01')
+
+model <- lm(order_cnt ~ order_cnt_w_1 + order_cnt_w_2 + order_cnt_w_3 +  order_cnt_w_4, data = train)
+summary(model)
+
+library(Metrics)
+y_pred <-predict(model, newdata = test)
+mae(test$order_cnt, y_pred) #43
+mape(test$order_cnt, y_pred) # 11
+
 
 data <- data  %>% filter(!is.na(rider_cnt_w_4))
 

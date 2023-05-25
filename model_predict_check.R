@@ -115,57 +115,57 @@ result
 str(predict)
 
 predict <- predict %>%
-  mutate(mean_model = rowMeans(dplyr::select(., c(y_pred_test_Lasso, y_pred_test_LGBMRegressor, y_pred_test_RandomForestRegressor)), na.rm = TRUE),
+  mutate(
          median_model = apply(dplyr::select(., c(y_pred_test_Lasso, y_pred_test_LGBMRegressor, y_pred_test_RandomForestRegressor)), 1, median, na.rm = TRUE),
-        weight1_model = ((y_pred_test_Lasso*0.978647) + (y_pred_test_LGBMRegressor*0.978647) + (y_pred_test_RandomForestRegressor*0.979338)) / (0.978647+0.978647+0.979338),
-        weight2_model = ((y_pred_test_Lasso*9.526898) + (y_pred_test_LGBMRegressor*8.691870) + (y_pred_test_RandomForestRegressor*8.564885)) / (9.526898+8.691870+8.564885))
+        weight1_model = ((y_pred_test_Lasso*0.967159) + (y_pred_test_LGBMRegressor*0.969086) + (y_pred_test_RandomForestRegressor*0.967943)) / (0.967159+0.969086+0.967943),
+        weight2_model = ((y_pred_test_Lasso*10.048993) + (y_pred_test_LGBMRegressor* 9.429600) + (y_pred_test_RandomForestRegressor* 9.417607)) / (10.048993+9.429600+9.417607))
 
 
 # MAE, RMSE, MAPE 계산하기
 # mae
-mae(predict$y_test, predict$y_pred_test_Lasso) #15.93
-mae(predict$y_test, predict$y_pred_test_LGBMRegressor) #15.45
-mae(predict$y_test, predict$y_pred_test_RandomForestRegressor) #14.93
+mae(predict$y_test, predict$y_pred_test_Lasso) 
+mae(predict$y_test, predict$y_pred_test_LGBMRegressor)
+mae(predict$y_test, predict$y_pred_test_RandomForestRegressor) 
+mae(predict$y_test, predict$y_pred_test_avg)
 
-mae(predict$y_test,predict$mean_model) #14.44
-mae(predict$y_test,predict$median_model) #14.57
-mae(predict$y_test,predict$weight1_model) #14.44
-mae(predict$y_test,predict$weight2_model) # 14.46
+mae(predict$y_test,predict$median_model) 
+mae(predict$y_test,predict$weight1_model) 
+mae(predict$y_test,predict$weight2_model)
 
 #rmse 
-rmse(predict$y_test, predict$y_pred_test_Lasso) #23.30
-rmse(predict$y_test, predict$y_pred_test_LGBMRegressor) #22.68
-rmse(predict$y_test, predict$y_pred_test_RandomForestRegressor) #22.31
+rmse(predict$y_test, predict$y_pred_test_Lasso) 
+rmse(predict$y_test, predict$y_pred_test_LGBMRegressor) 
+rmse(predict$y_test, predict$y_pred_test_RandomForestRegressor) 
 
-rmse(predict$y_test,predict$mean_model) #21.49
-rmse(predict$y_test,predict$median_model) #21.75
-rmse(predict$y_test,predict$weight1_model) # 21.49
-rmse(predict$y_test,predict$weight2_model) # 21.51
+rmse(predict$y_test, predict$y_pred_test_avg)
+
+rmse(predict$y_test,predict$median_model) 
+rmse(predict$y_test,predict$weight1_model) 
+rmse(predict$y_test,predict$weight2_model) 
 
 #mape
-mape(predict$y_test, predict$y_pred_test_Lasso)*100 #9.52
-mape(predict$y_test, predict$y_pred_test_LGBMRegressor)*100 #8.69
-mape(predict$y_test, predict$y_pred_test_RandomForestRegressor)*100  #8.56
+mape(predict$y_test, predict$y_pred_test_Lasso)*100 
+mape(predict$y_test, predict$y_pred_test_LGBMRegressor)*100 
+mape(predict$y_test, predict$y_pred_test_RandomForestRegressor)*100  
 
-mape(predict$y_test,predict$mean_model)*100  # 8.21
-mape(predict$y_test,predict$median_model)*100  # 8.27
-mape(predict$y_test,predict$weight1_model)*100  # 8.21
-mape(predict$y_test,predict$weight2_model)*100  # 8.22
+mape(predict$y_test, predict$y_pred_test_avg)*100
 
+mape(predict$y_test,predict$median_model)*100  
+mape(predict$y_test,predict$weight1_model)*100  
+mape(predict$y_test,predict$weight2_model)*100  
 
+str(predict)
 
 # 요일, 기상
 result <-  aggregate(cbind(abs(predict$y_pred_test_LinearRegression - predict$y_test), 
-                               abs(predict$y_pred_test_Ridge - predict$y_test),
                                abs(predict$y_pred_test_Lasso - predict$y_test),
                                abs(predict$y_pred_test_LGBMRegressor - predict$y_test),
                                abs(predict$y_pred_test_RandomForestRegressor - predict$y_test),
-                               abs(predict$y_pred_test_DecisionTreeRegressor - predict$y_test),
-                               abs(predict$y_test - predict$mean_model),
+                               abs(predict$y_test - predict$y_pred_test_avg),
                                abs(predict$y_test - predict$median_model),
                                abs(predict$y_test - predict$weight1_model),
                                abs(predict$y_test - predict$weight2_model)),
-                    by = list(predict$day_of_reg2,predict$is_rain, predict$is_holiday), 
+                    by = list(predict$is_holiday,predict$is_rain), 
                     FUN = mean)
 result
 
@@ -184,4 +184,43 @@ result_holiday <-  aggregate(cbind(abs(predict$y_pred_test_LinearRegression - pr
                     FUN = mean)
 result_holiday
 
-write.csv(predict, "prediction_results_test_set_model_add.csv", fileEncoding = "cp949", row.names = FALSE)
+# write.csv(predict, "prediction_results_test_set_model_add.csv", fileEncoding = "cp949", row.names = FALSE)
+
+
+
+###############################################################################################################################
+# 평일 - 공휴일 - 기상인 날 -> 그 주 주말 데이터 사용 
+
+head(predict)
+
+test <- predict  %>% filter(is_rain == 1 & is_holiday ==1 & day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일'))
+dim(test)
+
+test$date <- as.Date(test$datetime)
+n_distinct(test$date) # 2023-05-05 
+
+
+predict <- predict %>% 
+mutate(date = as.Date(datetime))
+
+test <- predict %>% filter(date == '2023-05-05' | date == '2023-05-06')
+
+test <- test  %>% 
+group_by(pick_rgn2_nm, hour_reg) %>% 
+mutate(y_pred_2 = ifelse(date == '2023-05-05' ,lead(y_pred_test_avg), y_pred_test_avg))
+
+summary(test$y_pred_2)
+summary(test$y_pred_test_avg)
+
+ss <- test  %>% filter(date == '2023-05-05')
+
+mae(ss$y_test, ss$y_pred_test_avg) #63.03
+mae(ss$y_test, ss$y_pred_2) #26.31 
+
+rmse(ss$y_test, ss$y_pred_test_avg) # 84.42
+rmse(ss$y_test, ss$y_pred_2) # 35.96
+
+mape(ss$y_test, ss$y_pred_test_avg) #23
+mape(ss$y_test, ss$y_pred_2) # 10
+
+
