@@ -26,13 +26,13 @@ data <- data %>%
 data <- data %>% 
   filter(pick_rgn1_nm == '서울특별시' & reg_date < max(data$reg_date))
 
-dim(data) # 219,476
+dim(data) 
 
 # 9am ~ 23pm 
 data <- data  %>% 
 filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 
-dim(data) # 189,750
+dim(data) #
 table(data$hour_reg) # 결측치 없음. 
 
 
@@ -42,7 +42,7 @@ data$reg_date <- as.Date(data$reg_date)
 data$datetime <- ymd(data$reg_date) + hours(data$hour_reg)
 
 min(data$datetime) # "2022-01-01 09:00:00 UTC"
-max(data$datetime) # "2023-05-21 23:00:00 UTC"
+max(data$datetime) # "2023-05-25 23:00:00 UTC"
 
 
 combined_data <- data %>% 
