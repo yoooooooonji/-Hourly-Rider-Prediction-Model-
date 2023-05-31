@@ -22,33 +22,68 @@ data$datetime <- as.POSIXct(data$datetime)
 
 #str(data)
 min(data$reg_date) # 2022-01-29
-max(data$reg_date) # 2023-05-21
-str(data)
+max(data$reg_date) # 2023-05-25
 
-# 그룹 8개로 나누기 
-# day_of_reg, is_rain, is_holiday 
+table(data$group_s)
 
-data <- data %>% 
-mutate(group_s = case_when(day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 0  & is_rain ==0 ~ "A",
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 0  & is_rain ==1 ~ "B", 
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 1  & is_rain ==0 ~ "C", 
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & is_holiday == 1  & is_rain ==1 ~ "D",
-                           day_of_reg %in% c('토요일','일요일') & is_holiday == 0  & is_rain ==0 ~ "E",
-                           day_of_reg %in% c('토요일','일요일') & is_holiday == 0  & is_rain ==1 ~ "F",
-                           day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==0 ~ "G",
-                           day_of_reg %in% c('토요일','일요일') & is_holiday == 1  & is_rain ==1 ~ "H"))
 
-table(data$group_s)                           
+# correlation
+# 평일 = 공휴일 - C
+# 평일 = 공휴일 = 기상 - D
+# 주말 = 공휴일 - G
+# 주말 = 공휴일 = 기상 H
 
-grouped_data <- split(data, data$group_s)
-groupA <- data  %>% filter(group_s == "A")
-groupB <- data  %>% filter(group_s == "B")
-groupC <- data  %>% filter(group_s == "C")
-groupD <- data  %>% filter(group_s == "D")
-groupE <- data  %>% filter(group_s == "E")
-groupF <- data  %>% filter(group_s == "F")
-groupG <- data  %>% filter(group_s == "G")
-groupH <- data  %>% filter(group_s == "H")
+df_c <- data  %>% filter(group_s == "C")
+df_d <- data  %>% filter(group_s == "D")
+df_g <- data  %>% filter(group_s == "G")
+df_h <- data  %>% filter(group_s == "H")
+
+df_a <- data  %>%  filter(group_s == "A")
+df_b <- data  %>% filter(group_s == "B")
+df_e <- data  %>%  filter(group_s == "E")
+df_f <- data  %>% filter(group_s == "F")
+
+max(df_a$reg_date) #2023-05-25
+max(df_b$reg_date) #2023-05-18
+max(df_e$reg_date) # 2023-05-21
+max(df_f$reg_date) #2023-05-06
+
+
+min(df_c$reg_date) 
+max(df_c$datetime) #2023-05-01
+
+min(df_d$reg_date) 
+max(df_d$datetime) #2023-05-05
+
+min(df_g$reg_date)
+max(df_g$datetime) #2023-01-22
+
+min(df_h$reg_date)
+max(df_h$datetime) #2022-12-25
+
+a_filter <- df_a  %>% filter(reg_date == '2023-05-25' & pick_rgn2_nm == '용산구')
+b_filter <- df_b  %>% filter(reg_date == '2023-05-18' & pick_rgn2_nm == '용산구')
+c_filter <- df_c  %>% filter(reg_date == '2023-05-01' & pick_rgn2_nm == '용산구')
+d_filter <- df_d %>% filter(reg_date == '2023-05-05' & pick_rgn2_nm ==  '용산구')
+e_filter <- df_e  %>% filter(reg_date == '2023-05-20' & pick_rgn2_nm == '용산구')
+f_filter <- df_f  %>% filter(reg_date == '2023-05-06' & pick_rgn2_nm == '용산구')
+g_filter <- df_g  %>% filter(reg_date == '2023-01-22' & pick_rgn2_nm == '용산구')
+h_filter <- df_h  %>% filter(reg_date == '2022-12-25' & pick_rgn2_nm == '용산구')
+
+a <- a_filter["rider_cnt"] %>% rename("a" = "rider_cnt")
+b <- b_filter["rider_cnt"] %>% rename("b" = "rider_cnt")
+c <- c_filter["rider_cnt"] %>% rename("c" = "rider_cnt")
+d <- d_filter["rider_cnt"] %>% rename("d" = "rider_cnt")
+e <- e_filter["rider_cnt"] %>% rename("e" = "rider_cnt")
+f <- f_filter["rider_cnt"] %>% rename("f" = "rider_cnt")
+g <- g_filter["rider_cnt"] %>% rename("g" = "rider_cnt")
+h <- h_filter["rider_cnt"] %>% rename("h" = "rider_cnt")
+
+df <- cbind(a,b,c,d,e,f,g,h)
+
+df_cor <- cor(df)
+df_cor
+write.csv(df_cor, "correlation_result.csv", fileEncoding = "cp949")
 
 
 graphA <- groupA  %>% 

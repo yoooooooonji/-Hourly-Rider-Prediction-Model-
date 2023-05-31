@@ -17,11 +17,57 @@ ipak(pkg)
 # data load
 predict <- read.csv("prediction_results_test_set.csv", fileEncoding = "cp949")
 
+dim(predict)
 head(predict)
 predict$datetime <- as.POSIXct(predict$datetime)
 predict <- predict  %>% mutate(reg_date = as.Date(predict$datetime))
 min(predict$datetime)
 max(predict$datetime)
+
+##########################################################################################################################################################
+saturday_data <- predict %>% filter(day_of_reg == '토요일')
+
+predict <- predict  %>% 
+mutate(reg_date_change = case_when(day_of_reg == '월요일' ~ reg_date+5,
+                                   day_of_reg == '화요일' ~ reg_date+4,
+                                   day_of_reg == '수요일' ~ reg_date+3,
+                                   day_of_reg == '목요일' ~ reg_date+2,
+                                   day_of_reg == '금요일' ~ reg_date+1,
+                                   TRUE ~ reg_date))
+
+predict <- left_join(predict, saturday_data, by = c("reg_date_change" = "reg_date", "pick_rgn2_nm" = "pick_rgn2_nm", "hour_reg" = "hour_reg"))
+
+#predict <- predict  %>% filter(!is.na(reg_date_change.y))
+
+# 
+predict <- predict  %>% 
+mutate(pred_final = case_when(is_holiday.x == 1 & day_of_reg.x %in% c("월요일","화요일", "수요일","목요일","금요일") ~ y_pred_test_avg1.y,
+                              TRUE ~ y_pred_test_avg1.x))
+
+                              
+result_final <- aggregate(cbind(abs(predict$pred_final - predict$y_test.x), 
+                               abs(predict$y_pred_test_avg1.x - predict$y_test.x)),
+                        by = list(predict$group_s.x), 
+                        FUN = mean)
+result_final
+
+result_mape <- aggregate(cbind(abs((predict$pred_final - predict$y_test.x) / predict$y_test.x) * 100, 
+                               abs((predict$y_pred_test_avg1.x - predict$y_test.x) / predict$y_test.x) * 100),
+                        by = list(predict$group_s.x), 
+                        FUN = mean)
+
+result_mape
+
+#write.csv(predict, "model_result_평공_보정.csv", fileEncoding = "cp949", row.names = FALSE)
+
+
+
+mae(predict$pred_final, predict$y_test.x)
+mae(predict$y_pred_test_avg.x, predict$y_test.x)
+
+mape(predict$pred_final, predict$y_test.x)
+mape(predict$y_pred_test_avg.x, predict$y_test.x)
+
 
 
 library(Metrics)

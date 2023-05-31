@@ -35,11 +35,12 @@ summarise(buffer_value = mean(y_test/y_pred_test_avg))
 
 test_df <- left_join (test_df, buffer_table, by = c("pick_rgn2_nm","is_rain","is_holiday"))
 
+
 colSums(is.na(test_df))
 
 test_df <- test_df  %>% 
 mutate(y_pred_test_buf = y_pred_test_avg * buffer_value)
-
+write.csv(test_df, "buffer_test_results.csv", fileEncoding = "cp949")
 
 # df$linear_x2 <- cut(df$linear_x, breaks=c(0, 0.5, 1, 1.25, 1.5, 2, 2.5, 3, 3.5, Inf), labels=c(0, 0.5, 1, 1.25, 1.5, 2, 2.5,3, 3.5), right=FALSE) 
 
