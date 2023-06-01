@@ -143,7 +143,8 @@ train_data <- train_data  %>%
 mutate(outlier = case_when ((is_rain2 == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) | 
 is_holiday == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5)) ~ 1, TRUE ~ 0))
 
-table(train_data$outlier) # 132,332/ 4883
+table(train_data$outlier) # 132,011/ 4864
+486400/132011
 
 # outlier median 값으로 대체 
 train_data <- train_data %>% 
@@ -164,7 +165,7 @@ test_data <- combined_data  %>%
 filter(reg_date >= '2023-01-01')
 
 combined_data <- rbind(train_data, test_data)
-dim(combined_data) #191250
+dim(combined_data) #193,125
 colSums(is.na(combined_data))
 
 #w-1,2,3,4 동일 요일 동시간대 주문수/라이더수
@@ -214,5 +215,3 @@ table(combined_data$group_s)
 combined_data <- subset(combined_data, select = -c(order_cnt, rain_c, snow_c, is_rain, is_rain2))
 
 write.csv(combined_data, "combined_data.csv", row.names = FALSE, fileEncoding = "cp949")
-
-

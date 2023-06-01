@@ -25,6 +25,54 @@ min(predict$datetime)
 max(predict$datetime)
 
 ##########################################################################################################################################################
+predict <- read_excel("/Users/yj.noh/Desktop/predict_accurate_check.xlsx", sheet= 1)
+predict$reg_date <- as.Date(predict$datetime)
+
+
+colSums(is.na(predict))
+
+# MAE
+result_hour <- aggregate(cbind(abs(predict$y_pred_test_avg1 - predict$y_test), 
+                               abs(predict$예측값_보정 - predict$y_test),
+                               abs(predict$예측값_3month - predict$y_test),
+                               abs(predict$예측값_numeric - predict$y_test),
+                               abs(predict$예측값_num_change - predict$y_test)),
+                        by = list(predict$hour_reg), 
+                        FUN = mean)
+result_hour
+
+result_holiday <- aggregate(cbind(abs(predict$y_pred_test_avg1 - predict$y_test), 
+                               abs(predict$예측값_보정 - predict$y_test),
+                               abs(predict$예측값_3month - predict$y_test),
+                               abs(predict$예측값_numeric - predict$y_test),
+                               abs(predict$예측값_num_change - predict$y_test)),
+                        by = list(predict$is_holiday), 
+                        FUN = mean)
+result_holiday
+
+result_day <- aggregate(cbind(abs(predict$y_pred_test_avg1 - predict$y_test), 
+                               abs(predict$예측값_보정 - predict$y_test),
+                               abs(predict$예측값_3month - predict$y_test),
+                               abs(predict$예측값_numeric - predict$y_test),
+                               abs(predict$예측값_num_change - predict$y_test)),
+                        by = list(predict$reg_date), 
+                        FUN = mean)
+result_day
+
+result_rgn2 <- aggregate(cbind(abs(predict$y_pred_test_avg1 - predict$y_test), 
+                               abs(predict$예측값_보정 - predict$y_test),
+                               abs(predict$예측값_3month - predict$y_test),
+                               abs(predict$예측값_numeric - predict$y_test),
+                               abs(predict$예측값_num_change - predict$y_test)),
+                        by = list(predict$pick_rgn2_nm), 
+                        FUN = mean)
+result_rgn2
+
+write.csv(result_hour, "result_hour.csv", row.names= FALSE, fileEncoding = "cp949")
+write.csv(result_holiday, "result_holiday.csv", row.names= FALSE, fileEncoding = "cp949")
+write.csv(result_day, "result_day.csv", row.names= FALSE, fileEncoding = "cp949")
+write.csv(result_rgn2, "result_rgn2.csv", row.names= FALSE, fileEncoding = "cp949")
+##########################################################################################################################################################
 saturday_data <- predict %>% filter(day_of_reg == '토요일')
 
 predict <- predict  %>% 
@@ -59,8 +107,6 @@ result_mape <- aggregate(cbind(abs((predict$pred_final - predict$y_test.x) / pre
 result_mape
 
 #write.csv(predict, "model_result_평공_보정.csv", fileEncoding = "cp949", row.names = FALSE)
-
-
 
 mae(predict$pred_final, predict$y_test.x)
 mae(predict$y_pred_test_avg.x, predict$y_test.x)
