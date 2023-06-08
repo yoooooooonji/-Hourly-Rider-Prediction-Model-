@@ -40,26 +40,18 @@ colSums(is.na(data))
 model <- lm(배차소요시간 ~ ord_cnt + rider_cnt, data = data )
 summary(model)
 
-# 0.9437*배달_라이더_비율-7.6824 
- 
-model2 <- lm(배달인프라_점수 ~ 배달_라이더_비율, data = data)
+data <- data  %>% 
+mutate(rider_2 = rider_cnt^2,
+       ord_2 = ord_cnt^2)
+
+model2 <- lm(배차소요시간 ~ rider_cnt + ord_cnt + rider_2 + ord_2  + 배달건수대비운행라이더수 , data= data)
 summary(model2)
 
-model3 <- lm(배차소요시간 ~ 배달_라이더_비율, data = data)
-summary(model3)
+predict <- predict(model2, newdata = data[c("ord_cnt","rider_2", "ord_2", "배차소요시간", "배달건수대비운행라이더수")])
 
-model4 <- lm(배달인프라_점수 ~ 배달건수 + 운행_라이더수, data = data)
-summary(model4)
-
-# 배차소요시간 = 배달건수*(0.0000041583) + 운행 라이더수 * -0.001622072 + 38.967420739
-# 배달인프라 점수 배달건수 * (0.00002747) + 운행 라이더수 * (-0.00107829) + 24.84904628 
+library(Metrics)
+mae(data$배차소요시간, predict)
+rmse(data$배차소요시간, predict)
+mape(data$배차소요시간, predict)
 
 
-data <- data  %>% 
-mutate(rider_2 = 운행_라이더수^2,
-       ord_2 = 배달건수^2)
-
-model5 <- lm(배차소요시간 ~ 운행_라이더수 + 배달건수 + rider_2 + ord_2  + 배달_라이더_비율, data= data)
-summary(model5)
-
-coefficients(model5)
