@@ -51,7 +51,7 @@ weather <- weather %>%
                 date = 일시)
 
 weather <- weather  %>% filter(지점명 == "서울")
-dim(weather) #371
+dim(weather) #372
 
 weather$date <- as.Date(weather$date)
 
@@ -73,18 +73,15 @@ table(combined_data$is_rain) # 0: 256 1: 116
 
 
 # 강수량 구분 (3, 15, 30)
-combined_data <- combined_data  %>% 
-mutate(rain_group = case_when(rain_c <= 0 ~ "no",
-                              0 < rain_c & rain_c < 3.0 ~ "weak",
-                              3.0<= rain_c & rain_c < 15 ~ "normal",
-                              15 <= rain_c & rain_c < 30 ~ "strong",
-                              30 <= rain_c ~ "very_strong"))
+# combined_data <- combined_data  %>% 
+# mutate(rain_group = case_when(rain_c <= 0 ~ "no",
+#                               0 < rain_c & rain_c < 3.0 ~ "weak",
+#                               3.0<= rain_c & rain_c < 15 ~ "normal",
+#                               15 <= rain_c & rain_c < 30 ~ "strong",
+#                               30 <= rain_c ~ "very_strong"))
 
-table(combined_data$rain_group)
+# table(combined_data$rain_group)
 
-# month
-combined_data <- combined_data %>% 
-  mutate(month = month(reg_date))
 
 #w-1,2,3,4 동일 요일 동시간대 주문수/라이더수
 library(zoo)
@@ -101,7 +98,7 @@ combined_data <- combined_data %>%
 colSums(is.na(combined_data)) # 14,28,42,56
 
 combined_data <- combined_data  %>% 
-filter(reg_date > '2022-06-15')
+filter(reg_date > '2022-06-20')
 
 colSums(is.na(combined_data)) # 
 
@@ -117,15 +114,15 @@ mutate(rider_cnt_w_1 = ifelse(is.na(rider_cnt_w_1),lag(rider_cnt,n=1), rider_cnt
 colSums(is.na(combined_data))
 
 # group 
-combined_data <- combined_data %>% 
-mutate(group_s = case_when(day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & holiday_yn == "N"  & is_rain ==0 ~ "A",
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & holiday_yn == "N"  & is_rain ==1 ~ "B", 
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & holiday_yn == "Y"  & is_rain ==0 ~ "C", 
-                           day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & holiday_yn == "Y"  & is_rain ==1 ~ "D",
-                           day_of_reg %in% c('토요일','일요일') & holiday_yn == "N"  & is_rain ==0 ~ "E",
-                           day_of_reg %in% c('토요일','일요일') & holiday_yn==  "N"  & is_rain ==1 ~ "F",
-                           day_of_reg %in% c('토요일','일요일') & holiday_yn == "Y"  & is_rain ==0 ~ "G",
-                           day_of_reg %in% c('토요일','일요일') & holiday_yn == "Y"  & is_rain==1 ~ "H"))
+# combined_data <- combined_data %>% 
+# mutate(group_s = case_when(day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & holiday_yn == "N"  & is_rain ==0 ~ "A",
+#                            day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & holiday_yn == "N"  & is_rain ==1 ~ "B", 
+#                            day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & holiday_yn == "Y"  & is_rain ==0 ~ "C", 
+#                            day_of_reg %in% c('월요일','화요일','수요일','목요일','금요일') & holiday_yn == "Y"  & is_rain ==1 ~ "D",
+#                            day_of_reg %in% c('토요일','일요일') & holiday_yn == "N"  & is_rain ==0 ~ "E",
+#                            day_of_reg %in% c('토요일','일요일') & holiday_yn==  "N"  & is_rain ==1 ~ "F",
+#                            day_of_reg %in% c('토요일','일요일') & holiday_yn == "Y"  & is_rain ==0 ~ "G",
+#                            day_of_reg %in% c('토요일','일요일') & holiday_yn == "Y"  & is_rain==1 ~ "H"))
 
 
 table(combined_data$group_s)
