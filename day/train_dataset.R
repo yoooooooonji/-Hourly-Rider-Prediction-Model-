@@ -14,15 +14,15 @@ ipak(pkg)
 
 ##########################################################################################################################################################
 # data load
-data <- read_excel("/Users/yj.noh/Desktop/rider_train_data_day.xlsx") 
+data <- read_excel("/Users/yj.noh/Desktop/seoul/seoul_day_new_data_20230613.xlsx") 
 
 data <- data %>%
   dplyr::rename(rider_cnt = 라이더수,
                 order_cnt = 주문수)
-dim(data) #4758
+dim(data) 
 head(data)
 
-table(data$pick_rgn1_nm) # 서울, 경기도, 
+table(data$pick_rgn1_nm) 
 
 data <- data %>% filter(pick_rgn1_nm == '서울특별시')
 
@@ -41,7 +41,7 @@ table(combined_data$day_of_reg)
 
 
 # weather
-weather <- read.csv("/Users/yj.noh/Desktop/weather_day.csv", fileEncoding = "cp949")
+weather <- read.csv("/Users/yj.noh/Desktop/seoul/seoul_day_weather_20230613.csv", fileEncoding = "cp949")
 
 str(weather)
 
@@ -51,7 +51,7 @@ weather <- weather %>%
                 date = 일시)
 
 weather <- weather  %>% filter(지점명 == "서울")
-dim(weather) #372
+dim(weather) #194
 
 weather$date <- as.Date(weather$date)
 
@@ -69,8 +69,8 @@ colSums(is.na(combined_data))
 combined_data <- combined_data %>% 
   mutate(is_rain = ifelse((rain_c > 0 | snow_c > 0),1,0))
 
-table(combined_data$is_rain) # 0: 256 1: 116
-
+table(combined_data$is_rain) # 0:138, 1: 57 
+dfadsfadf
 
 # 강수량 구분 (3, 15, 30)
 # combined_data <- combined_data  %>% 
