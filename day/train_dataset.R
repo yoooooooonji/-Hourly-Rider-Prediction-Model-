@@ -24,10 +24,10 @@ head(data)
 
 table(data$pick_rgn1_nm) 
 
-data <- data %>% filter(pick_rgn1_nm == '서울특별시')
+data <- data %>% filter(pick_rgn1_nm == '서울특별시' & reg_date < max(reg_date))
 
-min(data$reg_date)
-max(data$reg_date)
+min(data$reg_date) #2022.6.1
+max(data$reg_date) # 2023.6.12
 
 # NA 채우기 - time table
 # datetime 컬럼 만들기
@@ -51,7 +51,7 @@ weather <- weather %>%
                 date = 일시)
 
 weather <- weather  %>% filter(지점명 == "서울")
-dim(weather) #194
+dim(weather) # 377
 
 weather$date <- as.Date(weather$date)
 
@@ -69,8 +69,16 @@ colSums(is.na(combined_data))
 combined_data <- combined_data %>% 
   mutate(is_rain = ifelse((rain_c > 0 | snow_c > 0),1,0))
 
-table(combined_data$is_rain) # 0:138, 1: 57 
-dfadsfadf
+table(combined_data$is_rain) # 0: 258, 1: 120
+
+
+# is_holiday
+holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
+"2022-10-03",  "2022-10-09", "2022-10-10", "2022-12-25", "2023-01-01", "2023-01-21","2023-01-22", "2023-01-23", "2023-01-24", "2023-03-01", "2023-05-01", "2023-05-05","2023-05-27", "2023-05-29", "2023-06-06", "2023-08-15", "2023-09-28", "2023-09-29",
+"2023-09-30", "2023-10-03", "2023-10-09", "2023-12-25"))
+
+combined_data <- combined_data  %>% 
+mutate(is_holiday = ifelse(reg_date %in% holiday_list, 1,0))
 
 # 강수량 구분 (3, 15, 30)
 # combined_data <- combined_data  %>% 
@@ -95,10 +103,11 @@ combined_data <- combined_data %>%
          rider_cnt_w_4 = lag(rider_cnt, n=4),
          order_cnt_w_1 = lag(order_cnt, n=1))
 
-colSums(is.na(combined_data)) # 14,28,42,56
+colSums(is.na(combined_data)) # 14,28
+
 
 combined_data <- combined_data  %>% 
-filter(reg_date > '2022-06-20')
+filter(reg_date > '2022-07-01')
 
 colSums(is.na(combined_data)) # 
 
@@ -124,12 +133,10 @@ colSums(is.na(combined_data))
 #                            day_of_reg %in% c('토요일','일요일') & holiday_yn == "Y"  & is_rain ==0 ~ "G",
 #                            day_of_reg %in% c('토요일','일요일') & holiday_yn == "Y"  & is_rain==1 ~ "H"))
 
-
-table(combined_data$group_s)
-
-combined_data <- subset(combined_data, select = -c(pick_rgn1_nm, order_cnt))
+combined_data <- subset(combined_data, select = -c(pick_rgn1_nm, order_cnt, holiday_yn))
 
 write.csv(combined_data, "day/combined_data_day.csv", row.names = FALSE, fileEncoding = "cp949")
+
 
 
 

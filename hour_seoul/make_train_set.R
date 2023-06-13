@@ -14,8 +14,8 @@ ipak(pkg)
 
 ##########################################################################################################################################################
 # data load
-data <- read_excel("/Users/yj.noh/Desktop/seoul/train_data_new.xlsx")
-# data2 <- read_excel("/Users/yj.noh/Desktop/train_data_2023.xlsx")
+data <- read_excel("/Users/yj.noh/Desktop/seoul/seoul_hour_new_data_20230613.xlsx")
+#data2 <- read_excel("/Users/yj.noh/Desktop/train_data_2023.xlsx")
 
 #data <- rbind(data1, data2)
 data <- data%>%
@@ -32,7 +32,7 @@ dim(data) #
 data <- data  %>% 
 filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 
-dim(data) # 56,250
+dim(data) # 
 table(data$hour_reg) # 결측치 없음. 
 
 
@@ -41,8 +41,8 @@ table(data$hour_reg) # 결측치 없음.
 data$reg_date <- as.Date(data$reg_date)
 data$datetime <- ymd(data$reg_date) + hours(data$hour_reg)
 
-min(data$datetime) # "2022-01-01 09:00:00 UTC"
-max(data$datetime) # "2023-05-30 23:00:00 UTC"
+min(data$datetime) # "2022-12-01 09:00:00 UTC"
+max(data$datetime) # "2023-06-12 23:00:00 UTC"
 
 combined_data <- data %>% 
   mutate(hour_reg2 = hour(datetime),
@@ -57,8 +57,19 @@ combined_data <- combined_data  %>%
 rename("hour_reg" = "hour_reg2",
        "reg_date" = "reg_date2")
 
+
+# is_holiday
+holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
+"2022-10-03",  "2022-10-09", "2022-10-10", "2022-12-25", "2023-01-01", "2023-01-21","2023-01-22", "2023-01-23", "2023-01-24", "2023-03-01", "2023-05-01", "2023-05-05","2023-05-27", "2023-05-29", "2023-06-06", "2023-08-15", "2023-09-28", "2023-09-29",
+"2023-09-30", "2023-10-03", "2023-10-09", "2023-12-25"))
+
+combined_data <- combined_data  %>% 
+mutate(is_holiday = ifelse(reg_date %in% holiday_list, 1,0))
+
+table(combined_data$is_holiday)
+
 # weather
-weather <- read.csv("/Users/yj.noh/Desktop/seoul/weather_new.csv", fileEncoding = "cp949")
+weather <- read.csv("/Users/yj.noh/Desktop/seoul/seoul_hour_weather_20230613.csv", fileEncoding = "cp949")
 #weather2 <- read.csv("/Users/yj.noh/Desktop/weather_2023.csv", fileEncoding = "cp949")
 
 #weather <- rbind(weather1, weather2)
@@ -88,31 +99,31 @@ colSums(is.na(combined_data))
 combined_data <- combined_data %>% 
   mutate(is_rain = ifelse((rain_c > 0 | snow_c > 0),1,0))
 
-table(combined_data$is_rain) # 0: 52675, 1: 3575
+table(combined_data$is_rain) # 0: 63650, 1: 9100
 
 combined_data <- combined_data %>% 
 group_by(reg_date) %>% 
 mutate(is_rain2 = ifelse(sum(is_rain) >0 ,1,0))
 
-table(combined_data$is_rain2) # 45750, 10500
+table(combined_data$is_rain2) # 
 
 # 강수량 구분 (3, 15, 30)
-combined_data <- combined_data  %>% 
-mutate(rain_group = case_when(rain_c <= 0 ~ "no",
-                              0 < rain_c & rain_c < 3.0 ~ "weak",
-                              3.0<= rain_c & rain_c < 15 ~ "normal",
-                              15 <= rain_c & rain_c < 30 ~ "strong",
-                              30 <= rain_c ~ "very_strong"))
+# combined_data <- combined_data  %>% 
+# mutate(rain_group = case_when(rain_c <= 0 ~ "no",
+#                               0 < rain_c & rain_c < 3.0 ~ "weak",
+#                               3.0<= rain_c & rain_c < 15 ~ "normal",
+#                               15 <= rain_c & rain_c < 30 ~ "strong",
+#                               30 <= rain_c ~ "very_strong"))
 
-table(combined_data$rain_group)
-table(combined_data$holiday_yn) # y 17250
+# table(combined_data$rain_group)
+# table(combined_data$holiday_yn) # y 17250
 
 #  이상치(outlier) 여부 파악
 train_data <- combined_data  %>% 
 filter(reg_date <= '2023-03-31')
 
 train_data <- train_data %>% 
-group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain2, holiday_yn) %>% 
+group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain2, is_holiday) %>% 
 mutate(q1 = quantile(rider_cnt, 0.25),
       q3 = quantile(rider_cnt, 0.75),
       IQR1.5 = 1.5*(quantile(rider_cnt, 0.75) - quantile(rider_cnt, 0.25)))
@@ -121,7 +132,9 @@ train_data <- train_data  %>%
 mutate(outlier = case_when ((is_rain2 == 0 & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5) | 
 holiday_yn == "N" & (q1 - IQR1.5 > rider_cnt | rider_cnt > q3 + IQR1.5)) ~ 1, TRUE ~ 0))
 
-table(train_data$outlier) # 132,024, 4851
+table(train_data$outlier) # 43662, 1713
+
+171300/43662
 
 # outlier median 값으로 대체 
 train_data <- train_data %>% 
@@ -134,14 +147,12 @@ table(train_data$outlier, train_data$day_of_reg)
 train_data <- subset(train_data, select = -c(rider_cnt, q1, q3, IQR1.5, outlier))
 
 train_data <- train_data  %>% rename("rider_cnt" = "rider_cnt_2") %>% 
-dplyr::select (holiday_yn, pick_rgn2_nm, rider_cnt, order_cnt, datetime, hour_reg, reg_date, day_of_reg, rain_c, snow_c, is_rain, is_rain2, rain_group)
+dplyr::select (holiday_yn, pick_rgn2_nm, rider_cnt, order_cnt, datetime, hour_reg, reg_date, day_of_reg, is_holiday, rain_c, snow_c, is_rain, is_rain2)
 
 
 # test set
 test_data <- combined_data  %>% 
 filter(reg_date >= '2023-04-01')
-
-str(test_data)
 
 combined_data <- rbind(train_data, test_data)
 dim(combined_data) # 
@@ -241,7 +252,7 @@ colSums(is.na(combined_data))
 
 colSums(is.na(combined_data))
 
-combined_data <- subset(combined_data, select = -c(order_cnt, rain_c, snow_c, is_rain2))
+combined_data <- subset(combined_data, select = -c(order_cnt, rain_c, snow_c, is_rain2, holiday_yn))
 
 write.csv(combined_data, "hour_seoul/combined_data.csv", row.names = FALSE, fileEncoding = "cp949")
 
