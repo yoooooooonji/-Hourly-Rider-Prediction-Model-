@@ -37,7 +37,6 @@ filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
 dim(data) # 
 table(data$hour_reg) # 결측치 없음. 
 
-
 # NA 채우기 - time table
 # datetime 컬럼 만들기
 data$reg_date <- as.Date(data$reg_date)
@@ -163,7 +162,7 @@ colSums(is.na(combined_data))
 library(zoo)
 combined_data <- combined_data %>%
   arrange(datetime, pick_rgn2_nm) %>% 
-  group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain2) %>%  
+  group_by(pick_rgn2_nm, day_of_reg, hour_reg, is_rain2, is_holiday) %>%  
   mutate(rider_cnt_w_1 = lag(rider_cnt, n=1),
          rider_cnt_w_2 = lag(rider_cnt, n=2),
          rider_cnt_w_3 = lag(rider_cnt, n=3),
