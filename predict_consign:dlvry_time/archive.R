@@ -59,7 +59,52 @@ data$dlvry_rgn1_nm <- as.factor(data$dlvry_rgn1_nm)
 model1 <- lm(avg_dlvry_diff ~ rider_cnt + ord_cnt + mean_fee + ord_by_rider + hour_reg + weekday + dlvry_rgn2_nm, data = data)
 summary(model1)
 
+# hour - rgn1 
+# data load
+data_rgn1 <- read_excel("/Users/yj.noh/Desktop/need_rider_rgn1.xlsx")
+data_rgn1 <- data_rgn1  %>% filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
+dim(data_rgn1)
+str(data_rgn1)
 
+data_rgn1 <- data_rgn1  %>% 
+mutate(weekday = weekdays(as.Date(reg_date)),
+        ord_by_rider = ord_cnt/rider_cnt)
+
+var <-  c('weekday', 'hour_reg')
+data_rgn1[,var]<- lapply(data_rgn1[,var], factor)
+
+# model
+model3 <- lm(avg_dlvry_diff ~ rider_cnt + ord_cnt + weekday + mean_fee + hour_reg , data = data_rgn1)
+summary(model3)
+coefficients(model3)
+
+model4 <- lm(avg_consign_diff ~ rider_cnt + ord_cnt + weekday + mean_fee + hour_reg, data = data_rgn1)
+summary(model4)
+coefficients(model4)
+
+# hour - rgn2 
+# data load
+data_rgn2 <- read_excel("/Users/yj.noh/Desktop/need_rider_rgn2.xlsx")
+data_rgn2 <- data_rgn2  %>% filter(hour_reg %in% c(9,10,11,12,13,14,15,16,17,18,19,20,21,22,23))
+
+dim(data_rgn2)
+str(data_rgn2)
+
+data_rgn2 <- data_rgn2  %>% 
+mutate(weekday = weekdays(as.Date(reg_date)),
+        ord_by_rider = ord_cnt/rider_cnt)
+
+var <-  c('weekday', 'hour_reg', 'dlvry_rgn2_nm')
+data_rgn2[,var]<- lapply(data_rgn2[,var], factor)
+
+# model
+model5 <- lm(avg_dlvry_diff ~ rider_cnt + ord_cnt + weekday + mean_fee + hour_reg + dlvry_rgn2_nm + min_fee + max_fee, data = data_rgn2)
+summary(model5)
+coefficients(model5)
+
+model6 <- lm(avg_consign_diff ~ rider_cnt + ord_cnt + weekday + mean_fee + hour_reg + dlvry_rgn2_nm + min_fee + max_fee, data = data_rgn2)
+summary(model6)
+coefficients(model6)
 
 
 # 배달시간 25.6분 이상이면 1, 아니면 0 
