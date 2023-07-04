@@ -14,9 +14,31 @@ ipak(pkg)
 
 ##########################################################################################################################################################
 # data load
-data <- read_excel("/Users/yj.noh/Desktop/rider_working_pattern.xlsx")
+main_all <- read.table("/Users/yj.noh/Desktop/main_all.tsv", sep = "\t", header = TRUE)
+main_peak <- read.table("/Users/yj.noh/Desktop/main_peak.tsv", sep = "\t", header = TRUE)
+part_all <- read.table("/Users/yj.noh/Desktop/part_all.tsv", sep = "\t", header = TRUE)
+part_peak <- read.table("/Users/yj.noh/Desktop/part_peak.tsv", sep = "\t", header = TRUE)
+
+n_distinct(main_all$rider_id) #8959
+n_distinct(main_peak$rider_id) #16119
+n_distinct(part_all$rider_id) #9903
+n_distinct(part_peak$rider_id) #25977
+
+main_all <- main_all %>% filter(!rider_id %in% c(main_peak$rider_id, part_all$rider_id, part_peak$rider_id))
+main_peak <- main_peak  %>% filter(!rider_id %in% c(main_all$rider_id, part_all$rider_id, part_peak$rider_id))
+part_all <- part_all %>% filter(!rider_id %in% c(main_all$rider_id, main_peak$rider_id, part_peak$rider_id))
+part_peak <- part_peak  %>% filter(!rider_id %in% c(main_all$rider_id, part_all$rider_id, main_peak$rider_id))
+
+n_distinct(main_all$rider_id) #8533
+n_distinct(main_peak$rider_id) #13608
+n_distinct(part_all$rider_id) # 8768
+n_distinct(part_peak$rider_id) #25977
+
+data <- rbind(main_all, main_peak, part_all, part_peak)
+n_distinct(data$rider_id) # 56886
+
+data$business_day <- as.Date(data$business_day)
 data <- data  %>% arrange(rider_id, business_day, rgn1_nm, rgn2_nm)
-head(data)
 
 # 요일/ 공휴일 유무
 holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
@@ -26,27 +48,17 @@ holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "20
 data <- data %>% 
 mutate(weekday = weekdays(as.Date(business_day)),
         is_holiday = ifelse(business_day %in% holiday_list, 1,0))
-
+table(data$is_holiday)
 
 var <-  c('weekday', 'is_holiday')
 data[,var]<- lapply(data[,var], factor)
-table(data$is_holiday)
 
 rider_id_values <- unique(data$rider_id)
-glm_result <- data.frame(rider_id_values= character(), r2 = numeric(), coef = numeric(),  stringsAsFactors = FALSE)
+glm_result <- data.frame(rider_id_values= character(), accuracy = numeric(), sensitivity = numeric(), specificity = numeric(), best_threshold = numeric(), coef = numeric(), stringsAsFactors = FALSE)
 
-# glm modeling 
-# get_glm <- function(data) {
-#   model_id <- glm(outcome ~ weather_type + weekday, data = data, family = "binomial")
-#   predicted <- ifelse(predict(model_id, type = "response") > 0.5, 1, 0)
-#   accuracy <- sum(predicted == data$outcome) / nrow(data)
-#   coef <- coefficients(model_id)
-#   result <- data.frame(accuracy, coef)
-#   result
-# }
 
 get_glm <- function(data) {
-  model_id <- glm(outcome ~ weather_type + weekday, data = data, family = "binomial")
+  model_id <- glm(outcome ~ weather_type + weekday + is_holiday, data = data, family = "binomial")
   predicted_prob <- predict(model_id, type = "response")
   
   thresholds <- seq(0, 1, by = 0.01)  # 임계값 범위 설정
@@ -55,15 +67,15 @@ get_glm <- function(data) {
   for (i in 1:length(thresholds)) {
     predicted <- ifelse(predicted_prob > thresholds[i], 1, 0)
     accuracy_sensitivity[i] <- sum(predicted == data$outcome) / nrow(data) + sum(predicted[data$outcome == 1] == 1) / sum(data$outcome == 1)
-  }
-  
+  }  
   best_threshold <- thresholds[which.max(accuracy_sensitivity)]  # 정확도 + 민감도 합이 최대인 임계값 선택
   predicted <- ifelse(predicted_prob > best_threshold, 1, 0)
   accuracy <- sum(predicted == data$outcome) / nrow(data)
   sensitivity <- sum(predicted[data$outcome == 1] == 1) / sum(data$outcome == 1) # 1을 1로 예측한 비율 
-  
+  specificity <- sum(predicted[data$outcome == 0] == 0) / sum(data$outcome == 0)
   coef <- coefficients(model_id)
-  result <- data.frame(accuracy, sensitivity, coef)
+  print(c(rider_nm, accuracy, sensitivity, specificity, best_threshold, coef))
+  result <- data.frame(accuracy, sensitivity, specificity, best_threshold, coef)
   result
 }
 
@@ -76,3 +88,14 @@ for (rider_nm in rider_id_values) {
 }
 
 glm_result <- write.csv(glm_result, "results_glm.csv", fileEncoding = "cp949")
+
+# group 별 비교 
+glm_result <- read.csv("results_glm.csv", fileEncoding = "cp949")
+
+glm_result <- glm_result[!duplicated(glm_result[c("rider_nm")]),]
+data <- data[!duplicated(data[c("rider_id")]),]
+
+glm_result <- left_join(glm_result, data[c("rider_id", "cluster", "rider_delivery_method")], by = c("rider_nm" = "rider_id"))
+
+glm_result <- subset(glm_result , select = -c(X, coef))
+glm_result <- write.csv(glm_result, "results_glm_filter.csv", fileEncoding = "cp949")

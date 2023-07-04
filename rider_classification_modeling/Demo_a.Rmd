@@ -1,0 +1,53 @@
+---
+title: "demographics"
+
+author: "노윤지"
+date: "2023-07-04"
+output: html_document
+---
+
+```{r env, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warnings= FALSE)
+library(tidyverse)
+library(knitr)
+library(gtsummary)
+library(labelled)
+library(summarytools)
+library(kableExtra)
+library(magrittr)
+```
+
+```{r,warning = FALSE, message = FALSE}
+setwd("C:/Users/Owner/Documents/GitHub/PRJ_RIDER_PREDICT/predict_consign:dlvry_time")
+```
+
+
+### **[Table 1.1] **descriptive statistics of characteristics** 
+
+```{r}
+
+data_set <- read.csv("results_glm_filter.csv", fileEncoding = "cp949")
+data_set <- data_set[c("accuracy", "sensitivity","specificity", "cluster","rider_delivery_method")]
+data_set  %>% 
+ tbl_summary(by = cluster, 
+              type = all_continuous() ~ "continuous2",
+              statistic = all_continuous() ~ c("{mean} ({sd})", "{min}, {max}"),
+              missing_text = "(Missing value)", 
+              digits = list(all_continuous() ~ c(1, 2), 
+                            all_categorical() ~ c(0, 1))) %>%
+  add_overall() %>%
+  add_p(pvalue_fun = ~style_pvalue(., digits = 3)) %>%
+  bold_labels()
+
+```
+
+
+
+
+
+
+
+
+
+
+
