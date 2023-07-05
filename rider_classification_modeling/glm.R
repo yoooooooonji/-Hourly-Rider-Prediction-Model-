@@ -19,26 +19,35 @@ main_peak <- read.table("/Users/yj.noh/Desktop/main_peak.tsv", sep = "\t", heade
 part_all <- read.table("/Users/yj.noh/Desktop/part_all.tsv", sep = "\t", header = TRUE)
 part_peak <- read.table("/Users/yj.noh/Desktop/part_peak.tsv", sep = "\t", header = TRUE)
 
-n_distinct(main_all$rider_id) #8959
+n_distinct(main_all$rider_id) #8958
 n_distinct(main_peak$rider_id) #16119
-n_distinct(part_all$rider_id) #9903
-n_distinct(part_peak$rider_id) #25977
+n_distinct(part_all$rider_id) #9902
+n_distinct(part_peak$rider_id) #25980
 
-main_all <- main_all %>% filter(!rider_id %in% c(main_peak$rider_id, part_all$rider_id, part_peak$rider_id))
-main_peak <- main_peak  %>% filter(!rider_id %in% c(main_all$rider_id, part_all$rider_id, part_peak$rider_id))
-part_all <- part_all %>% filter(!rider_id %in% c(main_all$rider_id, main_peak$rider_id, part_peak$rider_id))
 part_peak <- part_peak  %>% filter(!rider_id %in% c(main_all$rider_id, part_all$rider_id, main_peak$rider_id))
+part_all <- part_all %>% filter(!rider_id %in% c(main_all$rider_id, main_peak$rider_id, part_peak$rider_id))
+main_peak <- main_peak  %>% filter(!rider_id %in% c(main_all$rider_id, part_all$rider_id, part_peak$rider_id))
+main_all <- main_all %>% filter(!rider_id %in% c(main_peak$rider_id, part_all$rider_id, part_peak$rider_id))
 
-n_distinct(main_all$rider_id) #8533
-n_distinct(main_peak$rider_id) #13608
-n_distinct(part_all$rider_id) # 8768
-n_distinct(part_peak$rider_id) #25977
+n_distinct(main_all$rider_id) #8958
+n_distinct(main_peak$rider_id) #15699
+n_distinct(part_all$rider_id) # 9353
+n_distinct(part_peak$rider_id) #22877
 
 data <- rbind(main_all, main_peak, part_all, part_peak)
-n_distinct(data$rider_id) # 56886
+n_distinct(data$rider_id) # 56887
 
 data$business_day <- as.Date(data$business_day)
 data <- data  %>% arrange(rider_id, business_day, rgn1_nm, rgn2_nm)
+
+# 라이더 별 운행 outcome 1/ 0 비율 
+outcome_sum <- data  %>% 
+group_by(rider_id, cluster, rider_delivery_method) %>% 
+summarise(yes =  sum(outcome))
+
+
+
+
 
 # 요일/ 공휴일 유무
 holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
@@ -89,13 +98,17 @@ for (rider_nm in rider_id_values) {
 
 glm_result <- write.csv(glm_result, "results_glm.csv", fileEncoding = "cp949")
 
+
 # group 별 비교 
 glm_result <- read.csv("results_glm.csv", fileEncoding = "cp949")
+n_distinct(glm_result$rider_nm)
 
 glm_result <- glm_result[!duplicated(glm_result[c("rider_nm")]),]
 data <- data[!duplicated(data[c("rider_id")]),]
 
-glm_result <- left_join(glm_result, data[c("rider_id", "cluster", "rider_delivery_method")], by = c("rider_nm" = "rider_id"))
+glm_result <- left_join(glm_result, data[c("rider_id", "cluster", "rider_delivery_method", "rgn1_nm", "rgn2_nm")], by = c("rider_nm" = "rider_id"))
+
+glm_result <- glm_result  %>% mutate(region = paste(rgn1_nm, rgn2_nm, sep = "_"))
 
 glm_result <- subset(glm_result , select = -c(X, coef))
 glm_result <- write.csv(glm_result, "results_glm_filter.csv", fileEncoding = "cp949")

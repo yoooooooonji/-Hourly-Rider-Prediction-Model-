@@ -27,7 +27,7 @@ setwd("C:/Users/Owner/Documents/GitHub/PRJ_RIDER_PREDICT/predict_consign:dlvry_t
 ```{r}
 
 data_set <- read.csv("results_glm_filter.csv", fileEncoding = "cp949")
-data_set <- data_set[c("accuracy", "sensitivity","specificity", "cluster","rider_delivery_method")]
+data_set <- data_set[c("accuracy", "sensitivity","specificity", "cluster","rider_delivery_method", "region")]
 data_set  %>% 
  tbl_summary(by = cluster, 
               type = all_continuous() ~ "continuous2",
@@ -38,7 +38,6 @@ data_set  %>%
   add_overall() %>%
   add_p(pvalue_fun = ~style_pvalue(., digits = 3)) %>%
   bold_labels()
-
 ```
 
 
