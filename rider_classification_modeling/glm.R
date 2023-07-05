@@ -45,9 +45,24 @@ outcome_sum <- data  %>%
 group_by(rider_id, cluster, rider_delivery_method) %>% 
 summarise(yes =  sum(outcome))
 
+outcome_sum <- outcome_sum  %>% 
+mutate(no = 30-yes)
 
+# demo
+outcome_sum[c("cluster","rider_delivery_method","yes" , "no")] %>% 
+ tbl_summary(by = cluster, 
+              type = all_continuous() ~ "continuous2",
+              statistic = all_continuous() ~ c("{mean} ({sd})", "{min}, {max}"),
+              missing_text = "(Missing value)", 
+              digits = list(all_continuous() ~ c(1, 2), 
+                            all_categorical() ~ c(0, 1))) %>%
+  add_overall() %>%
+  add_p(pvalue_fun = ~style_pvalue(., digits = 3)) %>%
+  bold_labels()
 
+test <- outcome_sum  %>% filter(yes == 1)
 
+table(test$cluster)
 
 # 요일/ 공휴일 유무
 holiday_list = ymd(c("2022-01-01", "2022-01-31", "2022-02-01", "2022-03-01", "2022-03-09",  "2022-05-05", "2022-05-08", "2022-06-01", "2022-06-06", "2022-08-15", "2022-09-09", "2022-09-10", "2022-09-11", "2022-09-12", 
